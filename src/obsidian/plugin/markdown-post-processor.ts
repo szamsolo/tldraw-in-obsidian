@@ -184,7 +184,7 @@ async function loadEmbedTldraw({
         }
 
         const { target, attributeName } = m[0]
-        if (!(target instanceof HTMLElement) || !(["alt", "width", "height"] as (string | null)[]).contains(attributeName)) {
+        if (!(target.instanceOf(HTMLElement)) || !(["alt", "width", "height"] as (string | null)[]).contains(attributeName)) {
             return;
         }
 
