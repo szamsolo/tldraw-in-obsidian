@@ -302,6 +302,7 @@ export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
                     zoomToEmbedPageBounds(editor)
                 }
             },
+            targetDocument: this.containerEl.ownerDocument,
         };
     }
 

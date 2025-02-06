@@ -1,5 +1,4 @@
 import { FileView, Menu, Notice, TFile, WorkspaceLeaf } from "obsidian";
-import { Root } from "react-dom/client";
 import { TldrawAppProps } from "src/components/TldrawApp";
 import TldrawPlugin from "src/main";
 import { PaneTarget, TLDRAW_ICON_NAME, VIEW_TYPE_TLDRAW, VIEW_TYPE_TLDRAW_FILE, VIEW_TYPE_TLDRAW_READ_ONLY, ViewType } from "src/utils/constants";
@@ -10,7 +9,6 @@ import { pluginMenuLabel } from "./menu";
 
 export class TldrawReadonly extends TldrawLoadableMixin(FileView) {
     plugin: TldrawPlugin;
-    reactRoot?: Root;
 
     constructor(leaf: WorkspaceLeaf, plugin: TldrawPlugin) {
         super(leaf);
