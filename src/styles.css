@@ -195,6 +195,10 @@ div[data-type="tldraw-read-only"] .view-content.tldraw-view-content {
 	max-inline-size: max-content;
 }
 
+.ptl-markdown-embed .ptl-view-content {
+	height: max-content;
+}
+
 .ptl-view-content:empty {
 	min-width: var(--ptl-placeholder-width);
 	min-height: var(--ptl-placeholder-height);
