@@ -13,7 +13,6 @@ import {
 import { TldrawFileView, TldrawView } from "./obsidian/TldrawView";
 import {
 	DEFAULT_SETTINGS,
-	FileDestinationsSettings,
 	TldrawPluginSettings,
 	TldrawSettingsTab,
 } from "./obsidian/TldrawSettingsTab";
@@ -60,6 +59,7 @@ import { TldrawFileListenerMap } from "./obsidian/plugin/TldrawFileListenerMap";
 import TLDataDocumentStoreManager from "./obsidian/plugin/TLDataDocumentStoreManager";
 import { getTldrawFileDestination } from "./obsidian/plugin/file-destination";
 import { tldrawFileToJson } from "./utils/tldraw-file/tldraw-file-to-json";
+import UserSettingsManager from "./obsidian/settings/UserSettingsManager";
 
 @pluginBuild
 export default class TldrawPlugin extends Plugin {
@@ -71,9 +71,10 @@ export default class TldrawPlugin extends Plugin {
 
 	// keeps track of what view mode each tab-file combo should be in:
 	leafFileViewModes: { [leafFileId: string]: ViewType } = {};
-	tldrawFileListeners = new TldrawFileListenerMap(this);
-	tldrawFileMetadataListeners = new TldrawFileListenerMap(this);
-	tlDataDocumentStoreManager = new TLDataDocumentStoreManager(this);
+	readonly settingsManager = new UserSettingsManager(this);
+	readonly tldrawFileListeners = new TldrawFileListenerMap(this);
+	readonly tldrawFileMetadataListeners = new TldrawFileListenerMap(this);
+	readonly tlDataDocumentStoreManager = new TLDataDocumentStoreManager(this);
 	currTldrawEditor?: Editor;
 
 	// misc:
@@ -97,7 +98,7 @@ export default class TldrawPlugin extends Plugin {
 		)
 
 		// settings:
-		await this.loadSettings();
+		await this.settingsManager.loadSettings();
 		this.addSettingTab(new TldrawSettingsTab(this.app, this));
 
 		// icons:
@@ -540,45 +541,6 @@ export default class TldrawPlugin extends Plugin {
 		});
 	}
 
-	async loadSettings() {
-		// We destructure the defaults for nested properties, e.g `embeds`, so that we can merge them separately since Object.assign does not merge nested properties.
-		const { embeds: embedsDefault, fileDestinations: fileDestinationsDefault, ...restDefault } = DEFAULT_SETTINGS;
-		const { embeds, fileDestinations, ...rest } = await this.loadData() as Partial<TldrawPluginSettings> || {};
-
-		const embedsMerged = Object.assign({}, embedsDefault, embeds)
-		const fileDestinationsMerged = Object.assign({}, fileDestinationsDefault,
-			(() => {
-				// Do not migrate if the the old file destination settings were already migrated.
-				if (fileDestinations === undefined) return {};
-				// Migrate old settings
-				const migrated: Partial<FileDestinationsSettings> = {};
-
-				if (rest.folder !== undefined) {
-					migrated.defaultFolder = rest.folder;
-				}
-
-				if (rest.assetsFolder !== undefined) {
-					migrated.assetsFolder = rest.assetsFolder;
-				}
-
-				if (rest.useAttachmentsFolder !== undefined && rest.useAttachmentsFolder) {
-					migrated.destinationMethod = 'attachments-folder';
-				}
-			})(),
-			fileDestinations,
-		);
-		delete rest.folder;
-		delete rest.assetsFolder;
-		delete rest.useAttachmentsFolder;
-		const restMerged = Object.assign({}, restDefault, rest);
-
-		this.settings = {
-			embeds: embedsMerged,
-			fileDestinations: fileDestinationsMerged,
-			...restMerged
-		};
-	}
-
 	async saveSettings() {
 		await this.saveData(this.settings);
 	}
@@ -597,16 +559,5 @@ export default class TldrawPlugin extends Plugin {
 		return processIconOverrides(this.settings.icons?.overrides, (icon) => {
 			return this.app.vault.adapter.getResourcePath(icon).split('?')[0]
 		});
-	}
-
-	settingsProvider = {
-		getCurrent: () => this.settings,
-		listen: (callback: () => void) => {
-			// TODO: Listen to updates on settings.
-			console.log(`TODO: Settings listener callback not implemented.`);
-			return () => {
-				// TODO: Unsubscribe from updates to settings.
-			}
-		}
 	}
 }

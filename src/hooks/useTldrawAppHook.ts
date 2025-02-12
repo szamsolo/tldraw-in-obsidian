@@ -3,6 +3,8 @@ import * as React from "react";
 import TldrawPlugin from "src/main";
 import { TldrawPluginMetaData } from "src/utils/document";
 import { isObsidianThemeDark } from "src/utils/utils";
+import monkeyPatchEditorInstance from "src/tldraw/monkey-patch/editor";
+import useUserTldrawOptions from "./useUserTldrawOptions";
 
 export type SetTldrawFileData = (data: {
     meta: TldrawPluginMetaData
@@ -10,39 +12,27 @@ export type SetTldrawFileData = (data: {
 }) => void;
 
 export function useTldrawAppEffects({
-    editor, initialTool, isReadonly, settingsProvider, selectNone,
+    editor, initialTool, isReadonly, settingsManager, selectNone,
     onEditorMount,
     setFocusedEditor,
 }: {
     editor?: Editor,
     initialTool?: string,
     isReadonly: boolean,
-    settingsProvider: TldrawPlugin['settingsProvider'],
+    settingsManager: TldrawPlugin['settingsManager'],
     selectNone: boolean,
     setFocusedEditor: (editor: Editor) => void,
     onEditorMount?: (editor: Editor) => void,
 }) {
-    const [settings, setSettings] = React.useState(() => settingsProvider.getCurrent());
+    const settings = useUserTldrawOptions(settingsManager);
 
-    React.useEffect(() => {
-        const removeListener = settingsProvider.listen(() => {
-            const newSettings = settingsProvider.getCurrent();
-            setSettings({
-                ...newSettings
-            });
-        });
-        return () => {
-            removeListener();
-        }
-    }, [
-        /**
-         * If the settings provider changes, then we need to recalculate the effect.
-         */
-        settingsProvider
-    ])
-
+    /**
+     * Effect for editor mounting
+     */
     React.useEffect(() => {
         if (!editor) return;
+
+        monkeyPatchEditorInstance(editor, settingsManager);
 
         if (selectNone) {
             editor.selectNone();
@@ -55,7 +45,7 @@ export function useTldrawAppEffects({
             snapMode,
             focusMode,
             toolSelected,
-        } = settings;
+        } = settingsManager.settings;
 
         editor.setCurrentTool(initialTool ?? toolSelected)
 
@@ -81,5 +71,19 @@ export function useTldrawAppEffects({
         // NOTE: These could probably be utilized for storing assets as files in the vault instead of tldraw's default indexedDB.
         // editor.registerExternalAssetHandler
         // editor.registerExternalContentHandler
-    }, [editor]);
+    }, [editor, settingsManager]);
+
+    /**
+     * Effect for user settings change
+     */
+    React.useEffect(() => {
+        if (!editor) return;
+        const laserDelayMs = settings.tldrawOptions?.laserDelayMs;
+        if (laserDelayMs && !Number.isNaN(laserDelayMs)) {
+            // @ts-ignore
+            // Even this is typed as readonly, we can still modify this property.
+            // NOTE: We do not want to re-render the editor, so we do not pass it to the TldrawApp component.
+            editor.options.laserDelayMs = laserDelayMs;
+        }
+    }, [editor, settings]);
 }

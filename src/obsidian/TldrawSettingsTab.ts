@@ -26,6 +26,7 @@ import FontsSettingsManager from "./settings/FontsSettingsManager";
 import DownloadManagerModal from "./modal/DownloadManagerModal";
 import { DownloadInfo } from "src/utils/fetch/download";
 import { validateFolderPath } from "./helpers/app";
+import { defaultTldrawOptions, TldrawOptions } from "tldraw";
 
 export type ThemePreference = "match-theme" | "dark" | "light";
 
@@ -98,6 +99,8 @@ type DeprecatedFileDestinationSettings = {
 	useAttachmentsFolder?: boolean;
 };
 
+type RemoveReadonly<T> = { -readonly [P in keyof T]: T[P] };
+
 export interface TldrawPluginSettings extends DeprecatedFileDestinationSettings {
 	fileDestinations: FileDestinationsSettings;
 	saveFileDelay: number; // in seconds
@@ -126,6 +129,12 @@ export interface TldrawPluginSettings extends DeprecatedFileDestinationSettings 
 		 */
 		showBgDots: boolean;
 	};
+	tldrawOptions?: Pick<Partial<RemoveReadonly<TldrawOptions>>, 'laserDelayMs'> & {
+		/**
+		 * When the laser tool is stopped, whether to keep the delay defined by `laserDelayMs`
+		 */
+		laserKeepDelayAfterStop?: boolean,
+	}
 }
 
 export const DEFAULT_SETTINGS = {
@@ -157,6 +166,8 @@ export class TldrawSettingsTab extends PluginSettingTab {
 	fontsSettingsManager: FontsSettingsManager;
 	iconsSettingsManager: IconsSettingsManager;
 	downloadManagerModal: DownloadManagerModal;
+	#removeSettingsListener?: () => void;
+	#settingsListeners = new Set<() => void>();
 
 	constructor(app: App, plugin: TldrawPlugin) {
 		super(app, plugin);
@@ -167,12 +178,28 @@ export class TldrawSettingsTab extends PluginSettingTab {
 	}
 
 	display(): void {
+		this.#removeSettingsListener = this.plugin.settingsManager.store.subscribe(() => {
+			this.#settingsListeners.forEach((e) => e());
+		});
 		const { containerEl } = this;
 		containerEl.empty();
 		this.fileSettings();
 		this.startUpSettings();
+		this.tldrawOptions();
 		this.embedsSettings();
 		this.assetsSettings();
+	}
+
+	addSettingsListener(cb: () => void) {
+		this.#settingsListeners.add(cb);
+	}
+
+	hide() {
+		super.hide();
+		this.#removeSettingsListener?.();
+		console.log('hide', this.#settingsListeners.size)
+		this.#settingsListeners.clear();
+		console.log('hide', this.#settingsListeners.size)
 	}
 
 	fileSettings() {
@@ -475,7 +502,7 @@ export class TldrawSettingsTab extends PluginSettingTab {
 			.addText((text) => text.setValue(`${this.plugin.settings.embeds.padding}`)
 				.onChange(async (value) => {
 					const padding = parseInt(value);
-					if(isNaN(padding) || padding < 0) {
+					if (isNaN(padding) || padding < 0) {
 						return;
 					}
 					this.plugin.settings.embeds.padding = padding;
@@ -671,5 +698,61 @@ export class TldrawSettingsTab extends PluginSettingTab {
 		createIconOverridesSettingsEl(this.plugin, this.containerEl, this.iconsSettingsManager,
 			(icon, config) => this.downloadIcon(icon, config)
 		);
+	}
+
+	tldrawOptions() {
+		this.containerEl.createEl("h1", { text: "Tldraw editor options" });
+		new Setting(this.containerEl)
+			.setName("Laser delay")
+			.setDesc(
+				`The delay for the laser tool in milliseconds.`
+			)
+			.addText((text) => {
+				const setValue = () => {
+					text.setValue(`${this.plugin.settings.tldrawOptions?.laserDelayMs ?? ''}`);
+				};
+				this.addSettingsListener(setValue)
+				setValue();
+				text
+					.setPlaceholder(`${defaultTldrawOptions.laserDelayMs}`)
+					.onChange(async (value) => {
+						console.log('change')
+						const parsedValue = parseInt(value);
+						if (Number.isNaN(parsedValue)) return;
+						await this.plugin.settingsManager.updateLaserDelayMs(parsedValue);
+					});
+			}).addExtraButton((button) => {
+				button
+					.setIcon("reset")
+					.setTooltip("reset")
+					.onClick(async () => (
+						await this.plugin.settingsManager.updateLaserDelayMs(undefined)
+					));
+			});
+
+		new Setting(this.containerEl)
+			.setName("Laser keep delay after stop")
+			.setDesc(
+				`Keep the laser delay lingering after stopping the laser tool.`
+			)
+			.addToggle((toggle) => {
+				const setValue = () => {
+					toggle.setValue(!!this.plugin.settings.tldrawOptions?.laserKeepDelayAfterStop);
+				};
+				this.addSettingsListener(setValue);
+				setValue();
+				toggle.onChange(async (value) => {
+					return (
+						await this.plugin.settingsManager.updateLaserKeepDelayAfterStop(value)
+					);
+				});
+			}).addExtraButton((button) => {
+				button
+					.setIcon("reset")
+					.setTooltip("reset")
+					.onClick(async () => (
+						await this.plugin.settingsManager.updateLaserKeepDelayAfterStop(undefined)
+					));
+			});
 	}
 }

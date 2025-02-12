@@ -190,7 +190,7 @@ const TldrawApp = ({ plugin, store,
 	useTldrawAppEffects({
 		editor, initialTool, isReadonly,
 		selectNone,
-		settingsProvider: plugin.settingsProvider,
+		settingsManager: plugin.settingsManager,
 		onEditorMount,
 		setFocusedEditor: (editor) => setFocusedEditor(true, editor),
 	});
