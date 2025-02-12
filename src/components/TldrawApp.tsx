@@ -81,6 +81,7 @@ export type TldrawAppProps = {
 	 */
 	store?: TldrawAppStoreProps,
 	options: TldrawAppOptions;
+	targetDocument: Document;
 };
 
 // https://github.com/tldraw/tldraw/blob/58890dcfce698802f745253ca42584731d126cc3/apps/examples/src/examples/custom-main-menu/CustomMainMenuExample.tsx
@@ -115,21 +116,24 @@ function getEditorStoreProps(storeProps: TldrawAppStoreProps) {
 	}
 }
 
-const TldrawApp = ({ plugin, store, options: {
-	components: otherComponents,
-	focusOnMount = true,
-	hideUi = false,
-	iconAssetUrls,
-	initialTool,
-	isReadonly = false,
-	onEditorMount,
-	onClickAwayBlur,
-	onInitialSnapshot,
-	onUiEvent: _onUiEvent,
-	selectNone = false,
-	tools,
-	uiOverrides: otherUiOverrides,
-} }: TldrawAppProps) => {
+const TldrawApp = ({ plugin, store,
+	options: {
+		components: otherComponents,
+		focusOnMount = true,
+		hideUi = false,
+		iconAssetUrls,
+		initialTool,
+		isReadonly = false,
+		onEditorMount,
+		onClickAwayBlur,
+		onInitialSnapshot,
+		onUiEvent: _onUiEvent,
+		selectNone = false,
+		tools,
+		uiOverrides: otherUiOverrides,
+	},
+	targetDocument: ownerDocument,
+}: TldrawAppProps) => {
 	const assetUrls = React.useRef({
 		fonts: plugin.getFontOverrides(),
 		icons: {
@@ -186,7 +190,7 @@ const TldrawApp = ({ plugin, store, options: {
 	useTldrawAppEffects({
 		editor, initialTool, isReadonly,
 		selectNone,
-		settingsProvider: plugin.settingsProvider,
+		settingsManager: plugin.settingsManager,
 		onEditorMount,
 		setFocusedEditor: (editor) => setFocusedEditor(true, editor),
 	});
@@ -232,6 +236,7 @@ const TldrawApp = ({ plugin, store, options: {
 				autoFocus={false}
 				onMount={setAppState}
 				tools={tools}
+				targetDocument={ownerDocument}
 			/>
 		</div>
 	);
@@ -251,6 +256,7 @@ export const createRootAndRenderTldrawApp = (
 			plugin={plugin}
 			store={options.store}
 			options={options.app ?? {}}
+			targetDocument={node.ownerDocument}
 		/>
 	);
 

@@ -2,7 +2,6 @@ import { FileView, TFile } from "obsidian";
 import { Root } from "react-dom/client";
 import TldrawPlugin from "src/main";
 import { MARKDOWN_ICON_NAME, VIEW_TYPE_MARKDOWN } from "src/utils/constants";
-import wrapReactRoot from "src/utils/wrap-react-root";
 import { createRootAndRenderTldrawApp, TldrawAppProps, TldrawAppStoreProps } from "src/components/TldrawApp";
 import TldrawAssetsModal from "./modal/TldrawAssetsModal";
 
@@ -20,8 +19,13 @@ export function TldrawLoadableMixin<T extends abstract new (...args: any[]) => F
      */
     abstract class _TldrawLoadableMixin extends Base {
         abstract plugin: TldrawPlugin;
-        abstract reactRoot?: Root;
+        private reactRoot?: Root;
         private onUnloadCallbacks: (() => void)[] = [];
+
+        #storeProps?: TldrawAppStoreProps;
+
+        #unregisterViewAssetsActionCallback?: () => void;
+        #unregisterOnWindowMigrated?: () => void;
 
         protected get tldrawContainer() { return this.containerEl.children[1]; }
 
@@ -33,6 +37,11 @@ export function TldrawLoadableMixin<T extends abstract new (...args: any[]) => F
             super.onload();
             this.contentEl.addClass("tldraw-view-content");
 
+            this.#unregisterOnWindowMigrated?.();
+            this.#unregisterOnWindowMigrated = this.contentEl.onWindowMigrated(() => {
+                this.refreshView();
+            })
+
             this.addAction(MARKDOWN_ICON_NAME, "View as markdown", () => this.viewAsMarkdownClicked());
         }
 
@@ -40,8 +49,9 @@ export function TldrawLoadableMixin<T extends abstract new (...args: any[]) => F
          * Removes the previously added entry point `tldraw-view-content`, and unmounts {@linkcode reactRoot}.
          */
         override onunload(): void {
+            this.#unregisterOnWindowMigrated?.();
             this.contentEl.removeClass("tldraw-view-content");
-            this.reactRoot?.unmount();
+            this.unmountReactRoot();
             super.onunload();
         }
 
@@ -78,34 +88,48 @@ export function TldrawLoadableMixin<T extends abstract new (...args: any[]) => F
          * @param storeProps 
          * @returns 
          */
-        protected async setStore(storeProps?: TldrawAppStoreProps, useIframe = false) {
-            const tldrawContainer = this.tldrawContainer;
-            this.reactRoot?.unmount();
-            if (!storeProps) return;
-            this.addViewAssetsAction(storeProps);
-            if (!useIframe) {
-                this.reactRoot = this.createReactRoot(tldrawContainer, storeProps);
-                return;
-            }
-            this.reactRoot = await wrapReactRoot(
-                tldrawContainer, (entryPoint) => this.createReactRoot(entryPoint, storeProps)
-            );
+        protected async setStore(storeProps?: TldrawAppStoreProps) {
+            this.#storeProps = storeProps;
+            this.updateViewAssetsAction();
+            this.refreshView();
         }
 
         protected viewAsMarkdownClicked() {
             this.plugin.updateViewMode(VIEW_TYPE_MARKDOWN);
         }
 
-        private addViewAssetsAction(storeProps: TldrawAppStoreProps) {
+        private updateViewAssetsAction() {
+            const storeProps = this.#storeProps;
+            this.#unregisterViewAssetsActionCallback?.();
+            if (!storeProps) return;
+
             const viewAssetsAction = this.addAction('library', 'View assets', () => {
                 const assetsModal = new TldrawAssetsModal(this.app, storeProps, this.file)
                 assetsModal.open();
                 this.registerOnUnloadFile(() => assetsModal.close());
             });
 
-            this.registerOnUnloadFile(() => {
+            const removeCb = () => {
                 viewAssetsAction.remove()
-            });
+            };
+            this.registerOnUnloadFile(removeCb);
+            this.#unregisterViewAssetsActionCallback = () => {
+                console.log('unregisterViewAssetsActionCallback')
+                this.onUnloadCallbacks.remove(removeCb);
+                removeCb();
+            }
+        }
+
+        private unmountReactRoot() {
+            this.reactRoot?.unmount();
+            this.reactRoot = undefined;
+        }
+
+        async refreshView() {
+            const storeProps = this.#storeProps;
+            this.unmountReactRoot();
+            if (!storeProps) return;
+            this.reactRoot = this.createReactRoot(this.tldrawContainer, storeProps);
         }
     }
 

@@ -21,7 +21,7 @@ export function showEmbedContextMenu(ev: MouseEvent | TouchEvent, {
                 clientY: ev.clientY,
             }))
         }
-    }).showAtMouseEvent(ev instanceof MouseEvent ? ev :
+    }).showAtMouseEvent(ev.instanceOf(MouseEvent) ? ev :
         // simulate click when it ev is undefined, e.g. MouseEvent not given because it was a touch event.
         new MouseEvent('click', {
             clientX: ev.touches.item(0)?.clientX,

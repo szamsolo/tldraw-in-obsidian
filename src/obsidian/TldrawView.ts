@@ -1,5 +1,4 @@
 import { debounce, TextFileView, TFile, WorkspaceLeaf } from "obsidian";
-import { Root } from "react-dom/client";
 import {
 	VIEW_TYPE_TLDRAW,
 	VIEW_TYPE_TLDRAW_FILE,
@@ -19,7 +18,6 @@ import TldrawStoreExistsIndexedDBModal, { TldrawStoreConflictResolveCanceled, Tl
 
 export class TldrawView extends TldrawLoadableMixin(TextFileView) {
 	plugin: TldrawPlugin;
-	reactRoot?: Root;
 
 	constructor(leaf: WorkspaceLeaf, plugin: TldrawPlugin) {
 		super(leaf);
@@ -112,7 +110,6 @@ export class TldrawView extends TldrawLoadableMixin(TextFileView) {
  */
 export class TldrawFileView extends TldrawLoadableMixin(TextFileView) {
 	plugin: TldrawPlugin;
-	reactRoot?: Root | undefined;
 
 	constructor(leaf: WorkspaceLeaf, plugin: TldrawPlugin) {
 		super(leaf);
