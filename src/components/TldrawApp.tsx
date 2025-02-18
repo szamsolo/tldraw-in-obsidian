@@ -179,7 +179,7 @@ const TldrawApp = ({ plugin, store,
 				plugin.currTldrawEditor = undefined;
 				return;
 			}
-			if (editor) {
+			if (editor && editor.getContainer().win === editor.getContainer().win.activeWindow) {
 				editor.focus()
 				setIsFocused(true);
 				plugin.currTldrawEditor = editor;

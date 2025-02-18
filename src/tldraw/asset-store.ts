@@ -132,7 +132,13 @@ export class ObsidianMarkdownFileTLAssetStoreProxy {
         if (cachedAsset) return cachedAsset;
         const assetData = await this.getAsset(blockRefAssetId);
         if (!assetData) return null;
-        const assetFileBlob = new Blob([assetData]);
+        const assetFileBlob = new Blob(
+            [assetData],
+            {
+                type: Buffer.from(assetData.slice(0, 4)).toString() === '<svg'
+                    ? 'image/svg+xml' : undefined
+            }
+        );
         const assetUri = URL.createObjectURL(assetFileBlob);
         this.#resolvedAssetDataCache.set(blockRefAssetId, assetUri);
         return assetUri;
@@ -184,9 +190,11 @@ export class ObsidianTLAssetStore implements TLAssetStore {
         }
     }
 
-    async upload(asset: TLAsset, file: File): Promise<string> {
+    async upload(asset: TLAsset, file: File, _: AbortSignal): ReturnType<TLAssetStore['upload']> {
         const blockRefAssetId = await this.proxy.storeAsset(asset, file);
-        return `asset:${blockRefAssetId}`;
+        return {
+            src: `asset:${blockRefAssetId}`,
+        };
     }
 
     async resolve(asset: TLAsset, ctx: TLAssetContext): Promise<null | string> {
