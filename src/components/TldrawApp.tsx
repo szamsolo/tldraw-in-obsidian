@@ -17,12 +17,15 @@ import {
 	useActions,
 } from "tldraw";
 import { OPEN_FILE_ACTION, SAVE_FILE_COPY_ACTION, SAVE_FILE_COPY_IN_VAULT_ACTION } from "src/utils/file";
-import { uiOverrides } from "src/tldraw/ui-overrides";
+import { PLUGIN_ACTION_TOGGLE_ZOOM_LOCK, uiOverrides } from "src/tldraw/ui-overrides";
 import TldrawPlugin from "src/main";
 import { Platform } from "obsidian";
 import { useTldrawAppEffects } from "src/hooks/useTldrawAppHook";
 import { useClickAwayListener } from "src/hooks/useClickAwayListener";
 import { TLDataDocumentStore } from "src/utils/document";
+import PluginKeyboardShortcutsDialog from "./PluginKeyboardShortcutsDialog";
+import PluginQuickActions from "./PluginQuickActions";
+import { lockZoomIcon } from "src/assets/data-icons";
 
 type TldrawAppOptions = {
 	iconAssetUrls?: TLUiAssetUrlOverrides['icons'],
@@ -92,6 +95,8 @@ const components = (plugin: TldrawPlugin): TLComponents => ({
 			<DefaultMainMenuContent />
 		</DefaultMainMenu>
 	),
+	KeyboardShortcutsDialog: PluginKeyboardShortcutsDialog,
+	QuickActions: PluginQuickActions,
 });
 
 function LocalFileMenu(props: { plugin: TldrawPlugin }) {
@@ -139,6 +144,7 @@ const TldrawApp = ({ plugin, store,
 		icons: {
 			...plugin.getIconOverrides(),
 			...iconAssetUrls,
+			[PLUGIN_ACTION_TOGGLE_ZOOM_LOCK]: lockZoomIcon
 		},
 	})
 	const overridesUi = React.useRef({

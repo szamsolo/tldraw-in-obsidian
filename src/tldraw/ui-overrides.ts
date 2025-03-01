@@ -3,6 +3,10 @@ import { Platform } from "obsidian";
 import TldrawPlugin from "src/main";
 import { downloadBlob, getSaveFileCopyAction, getSaveFileCopyInVaultAction, importFileAction, OPEN_FILE_ACTION, SAVE_FILE_COPY_ACTION, SAVE_FILE_COPY_IN_VAULT_ACTION } from "src/utils/file";
 
+const DEFAULT_CAMERA_STEPS = [0.1, 0.25, 0.5, 1, 2, 4, 8];
+
+export const PLUGIN_ACTION_TOGGLE_ZOOM_LOCK = 'toggle-zoom-lock';
+
 export function uiOverrides(plugin: TldrawPlugin): TLUiOverrides {
 	const trackEvent = useUiEvents();
 	return {
@@ -41,6 +45,25 @@ export function uiOverrides(plugin: TldrawPlugin): TLUiOverrides {
 			}));
 
 			actions['paste'] = pasteFromClipboardOverride(editor, { msg, paste, addToast });
+
+			/**
+			 * https://tldraw.dev/examples/editor-api/lock-camera-zoom
+			 */
+			actions[PLUGIN_ACTION_TOGGLE_ZOOM_LOCK] = {
+				id: PLUGIN_ACTION_TOGGLE_ZOOM_LOCK,
+				label: {
+					default: 'Toggle zoom lock'
+				},
+				icon: PLUGIN_ACTION_TOGGLE_ZOOM_LOCK,
+				kbd: '!k',
+				readonlyOk: true,
+				onSelect() {
+					const isCameraZoomLockedAlready = editor.getCameraOptions().zoomSteps.length === 1
+					editor.setCameraOptions({
+						zoomSteps: isCameraZoomLockedAlready ? DEFAULT_CAMERA_STEPS : [editor.getZoomLevel()],
+					})
+				},
+			}
 
 			return actions;
 		},

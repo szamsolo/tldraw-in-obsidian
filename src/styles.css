@@ -45,6 +45,18 @@
 	color: var(--color-selected-contrast);
 }
 
+.tldraw-view-root .ptl-quick-action-button-wrapper[data-selected=true] .tlui-button__icon {
+	color: var(--color-selected-contrast);
+}
+
+.tldraw-view-root .ptl-quick-action-button-wrapper[data-selected=true] .tlui-button::before {
+	content: "";
+	position: absolute;
+	inset: 4px;
+	border-radius: var(--radius-2);
+	background-color: var(--color-selected);
+}
+
 /* OVERRIDING button:not(.clickable-icon) */
 .tldraw-view-root .tlui-button.tlui-help-menu__button {
 	background-color: var(--color-low);
