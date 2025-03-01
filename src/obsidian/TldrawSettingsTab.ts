@@ -26,7 +26,10 @@ import FontsSettingsManager from "./settings/FontsSettingsManager";
 import DownloadManagerModal from "./modal/DownloadManagerModal";
 import { DownloadInfo } from "src/utils/fetch/download";
 import { validateFolderPath } from "./helpers/app";
-import { defaultTldrawOptions, TldrawOptions } from "tldraw";
+import { defaultTldrawOptions, TLCameraOptions, TldrawOptions } from "tldraw";
+import { createRoot } from "react-dom/client";
+import { createElement } from "react";
+import CameraOptionsSettings from "src/components/settings/CameraOptionsSettings";
 
 export type ThemePreference = "match-theme" | "dark" | "light";
 
@@ -101,6 +104,11 @@ type DeprecatedFileDestinationSettings = {
 
 type RemoveReadonly<T> = { -readonly [P in keyof T]: T[P] };
 
+/**
+ * Camera options that users can choose
+ */
+export type UserTLCameraOptions = Pick<Partial<TLCameraOptions>, 'panSpeed' | 'zoomSpeed' | 'zoomSteps' | 'wheelBehavior'>;
+
 export interface TldrawPluginSettings extends DeprecatedFileDestinationSettings {
 	fileDestinations: FileDestinationsSettings;
 	saveFileDelay: number; // in seconds
@@ -129,12 +137,19 @@ export interface TldrawPluginSettings extends DeprecatedFileDestinationSettings 
 		 */
 		showBgDots: boolean;
 	};
+	/**
+	 * Options that apply to the editor
+	 */
 	tldrawOptions?: Pick<Partial<RemoveReadonly<TldrawOptions>>, 'laserDelayMs'> & {
 		/**
 		 * When the laser tool is stopped, whether to keep the delay defined by `laserDelayMs`
 		 */
 		laserKeepDelayAfterStop?: boolean,
 	}
+	/**
+	 * Options that apply to the editor camera
+	 */
+	cameraOptions?: UserTLCameraOptions,
 }
 
 export const DEFAULT_SETTINGS = {
@@ -166,8 +181,8 @@ export class TldrawSettingsTab extends PluginSettingTab {
 	fontsSettingsManager: FontsSettingsManager;
 	iconsSettingsManager: IconsSettingsManager;
 	downloadManagerModal: DownloadManagerModal;
-	#removeSettingsListener?: () => void;
-	#settingsListeners = new Set<() => void>();
+	#settingsListeners: Set<() => void>;
+	#disposables = new Set<() => void>();
 
 	constructor(app: App, plugin: TldrawPlugin) {
 		super(app, plugin);
@@ -178,9 +193,18 @@ export class TldrawSettingsTab extends PluginSettingTab {
 	}
 
 	display(): void {
-		this.#removeSettingsListener = this.plugin.settingsManager.store.subscribe(() => {
-			this.#settingsListeners.forEach((e) => e());
-		});
+		const settingsListeners = this.#settingsListeners = new Set();
+		const removeSettingsListener = this.plugin.settingsManager.store.subscribe(
+			() => {
+				settingsListeners.forEach((e) => e());
+			}
+		);
+		this.#disposables.add(
+			() => {
+				removeSettingsListener();
+				settingsListeners.clear();
+			}
+		);
 		const { containerEl } = this;
 		containerEl.empty();
 		this.fileSettings();
@@ -196,10 +220,9 @@ export class TldrawSettingsTab extends PluginSettingTab {
 
 	hide() {
 		super.hide();
-		this.#removeSettingsListener?.();
-		console.log('hide', this.#settingsListeners.size)
-		this.#settingsListeners.clear();
-		console.log('hide', this.#settingsListeners.size)
+		const disposables = [...this.#disposables];
+		this.#disposables.clear();
+		disposables.forEach((e) => e());
 	}
 
 	fileSettings() {
@@ -702,6 +725,7 @@ export class TldrawSettingsTab extends PluginSettingTab {
 
 	tldrawOptions() {
 		this.containerEl.createEl("h1", { text: "Tldraw editor options" });
+		this.containerEl.createEl("h2", { text: "Options" });
 		new Setting(this.containerEl)
 			.setName("Laser delay")
 			.setDesc(
@@ -754,5 +778,11 @@ export class TldrawSettingsTab extends PluginSettingTab {
 						await this.plugin.settingsManager.updateLaserKeepDelayAfterStop(undefined)
 					));
 			});
+		const cameraOptionsSection = this.containerEl.createDiv();
+		const root = createRoot(cameraOptionsSection);
+		root.render(createElement(CameraOptionsSettings, {
+			settingsManager: this.plugin.settingsManager,
+		}));
+		this.#disposables.add(() => root.unmount());
 	}
 }
