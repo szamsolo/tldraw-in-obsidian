@@ -1,5 +1,5 @@
 diff --git a/node_modules/tldraw/dist-esm/index.d.mts b/node_modules/tldraw/dist-esm/index.d.mts
-index c813403..6fcb73d 100644
+index a16aaa1..74e4502 100644
 --- a/node_modules/tldraw/dist-esm/index.d.mts
 +++ b/node_modules/tldraw/dist-esm/index.d.mts
 @@ -51,6 +51,7 @@ import { TLArrowShapeArrowheadStyle } from '@tldraw/editor';
@@ -10,7 +10,7 @@ index c813403..6fcb73d 100644
  import { TLBookmarkAsset } from '@tldraw/editor';
  import { TLBookmarkShape } from '@tldraw/editor';
  import { TLBookmarkShapeProps } from '@tldraw/editor';
-@@ -1656,7 +1657,7 @@ export declare enum PORTRAIT_BREAKPOINT {
+@@ -1658,7 +1659,7 @@ export declare enum PORTRAIT_BREAKPOINT {
  export declare function PreferencesGroup(): JSX_2.Element;
  
  /** @public */
@@ -19,7 +19,7 @@ index c813403..6fcb73d 100644
  
  /** @public @react */
  export declare function PrintItem(): JSX_2.Element;
-@@ -1960,6 +1961,14 @@ export declare const TLDRAW_FILE_EXTENSION: ".tldr";
+@@ -1969,6 +1970,14 @@ export declare const TLDRAW_FILE_EXTENSION: ".tldr";
  export declare interface TldrawBaseProps extends TldrawUiProps, TldrawEditorBaseProps, TLExternalContentProps {
      components?: TLComponents;
      embeds?: TLEmbedDefinition[];
@@ -34,7 +34,7 @@ index c813403..6fcb73d 100644
  }
  
  /** @public */
-@@ -2036,10 +2045,22 @@ export declare interface TldrawImageProps extends TLImageExportOptions {
+@@ -2045,10 +2054,22 @@ export declare interface TldrawImageProps extends TLImageExportOptions {
       * The license key.
       */
      licenseKey?: string;
@@ -57,7 +57,7 @@ index c813403..6fcb73d 100644
  }
  
  /** @public */
-@@ -3275,7 +3296,7 @@ export declare function useNativeClipboardEvents(): void;
+@@ -3284,7 +3305,7 @@ export declare function useNativeClipboardEvents(): void;
  export declare function usePrefersReducedMotion(): boolean;
  
  /** @public */
@@ -568,29 +568,29 @@ index c14e31b..5ef4d18 100644
    "names": []
  }
 diff --git a/node_modules/tldraw/dist-esm/lib/utils/export/export.mjs b/node_modules/tldraw/dist-esm/lib/utils/export/export.mjs
-index bba3e2c..3973a2a 100644
+index 808cf20..33325ad 100644
 --- a/node_modules/tldraw/dist-esm/lib/utils/export/export.mjs
 +++ b/node_modules/tldraw/dist-esm/lib/utils/export/export.mjs
-@@ -45,7 +45,7 @@ const mimeTypeByFormat = {
+@@ -46,7 +46,7 @@ const clipboardMimeTypesByFormat = {
    jpeg: "image/jpeg",
    png: "image/png",
    webp: "image/webp",
 -  svg: "text/plain"
 +  svg: "image/svg+xml"
  };
- function exportToImagePromise(editor, ids, opts = {}) {
+ function exportToImagePromiseForClipboard(editor, ids, opts = {}) {
    const idsToUse = ids?.length ? ids : [...editor.getCurrentPageShapeIds()];
 diff --git a/node_modules/tldraw/dist-esm/lib/utils/export/export.mjs.map b/node_modules/tldraw/dist-esm/lib/utils/export/export.mjs.map
-index 965c3c1..f61c2a5 100644
+index 0e650a3..05ca784 100644
 --- a/node_modules/tldraw/dist-esm/lib/utils/export/export.mjs.map
 +++ b/node_modules/tldraw/dist-esm/lib/utils/export/export.mjs.map
 @@ -1,7 +1,7 @@
  {
    "version": 3,
    "sources": ["../../../../src/lib/utils/export/export.ts"],
--  "sourcesContent": ["import {\n\tEditor,\n\tTLExportType,\n\tTLImageExportOptions,\n\tTLShapeId,\n\texhaustiveSwitchError,\n} from '@tldraw/editor'\n\nasync function getSvgString(editor: Editor, ids: TLShapeId[], opts: TLImageExportOptions) {\n\tconst svg = await editor.getSvgString(ids, opts)\n\tif (!svg) {\n\t\tthrow new Error('Could not construct SVG.')\n\t}\n\treturn svg\n}\n\nexport async function exportToString(\n\teditor: Editor,\n\tids: TLShapeId[],\n\tformat: 'svg' | 'json',\n\topts: TLImageExportOptions = {}\n) {\n\tswitch (format) {\n\t\tcase 'svg': {\n\t\t\treturn (await getSvgString(editor, ids, opts))?.svg\n\t\t}\n\t\tcase 'json': {\n\t\t\tconst data = await editor.resolveAssetsInContent(editor.getContentFromCurrentPage(ids))\n\t\t\treturn JSON.stringify(data)\n\t\t}\n\t\tdefault: {\n\t\t\texhaustiveSwitchError(format)\n\t\t}\n\t}\n}\n\n/**\n * Export the given shapes as a blob.\n * @param editor - The editor instance.\n * @param ids - The ids of the shapes to export.\n * @param format - The format to export as.\n * @param opts - Rendering options.\n * @returns A promise that resolves to a blob.\n * @deprecated Use {@link @tldraw/editor#Editor.toImage} instead.\n * @public\n */\nexport async function exportToBlob({\n\teditor,\n\tids,\n\tformat,\n\topts = {},\n}: {\n\teditor: Editor\n\tids: TLShapeId[]\n\tformat: TLExportType\n\topts?: TLImageExportOptions\n}): Promise<Blob> {\n\tconst idsToUse = ids?.length ? ids : [...editor.getCurrentPageShapeIds()]\n\tswitch (format) {\n\t\tcase 'jpeg':\n\t\tcase 'png':\n\t\tcase 'webp':\n\t\tcase 'svg': {\n\t\t\treturn (await editor.toImage(idsToUse, { ...opts, format })).blob\n\t\t}\n\t\tdefault: {\n\t\t\texhaustiveSwitchError(format)\n\t\t}\n\t}\n}\n\nconst mimeTypeByFormat = {\n\tjpeg: 'image/jpeg',\n\tpng: 'image/png',\n\twebp: 'image/webp',\n\tsvg: 'text/plain',\n}\n\nexport function exportToImagePromise(\n\teditor: Editor,\n\tids: TLShapeId[],\n\topts: TLImageExportOptions = {}\n): { blobPromise: Promise<Blob>; mimeType: string } {\n\tconst idsToUse = ids?.length ? ids : [...editor.getCurrentPageShapeIds()]\n\tconst format = opts.format ?? 'png'\n\treturn {\n\t\tblobPromise: editor.toImage(idsToUse, opts).then((result) => result.blob),\n\t\tmimeType: mimeTypeByFormat[format],\n\t}\n}\n"],
-+  "sourcesContent": ["import {\n\tEditor,\n\tTLExportType,\n\tTLImageExportOptions,\n\tTLShapeId,\n\texhaustiveSwitchError,\n} from '@tldraw/editor'\n\nasync function getSvgString(editor: Editor, ids: TLShapeId[], opts: TLImageExportOptions) {\n\tconst svg = await editor.getSvgString(ids, opts)\n\tif (!svg) {\n\t\tthrow new Error('Could not construct SVG.')\n\t}\n\treturn svg\n}\n\nexport async function exportToString(\n\teditor: Editor,\n\tids: TLShapeId[],\n\tformat: 'svg' | 'json',\n\topts: TLImageExportOptions = {}\n) {\n\tswitch (format) {\n\t\tcase 'svg': {\n\t\t\treturn (await getSvgString(editor, ids, opts))?.svg\n\t\t}\n\t\tcase 'json': {\n\t\t\tconst data = await editor.resolveAssetsInContent(editor.getContentFromCurrentPage(ids))\n\t\t\treturn JSON.stringify(data)\n\t\t}\n\t\tdefault: {\n\t\t\texhaustiveSwitchError(format)\n\t\t}\n\t}\n}\n\n/**\n * Export the given shapes as a blob.\n * @param editor - The editor instance.\n * @param ids - The ids of the shapes to export.\n * @param format - The format to export as.\n * @param opts - Rendering options.\n * @returns A promise that resolves to a blob.\n * @deprecated Use {@link @tldraw/editor#Editor.toImage} instead.\n * @public\n */\nexport async function exportToBlob({\n\teditor,\n\tids,\n\tformat,\n\topts = {},\n}: {\n\teditor: Editor\n\tids: TLShapeId[]\n\tformat: TLExportType\n\topts?: TLImageExportOptions\n}): Promise<Blob> {\n\tconst idsToUse = ids?.length ? ids : [...editor.getCurrentPageShapeIds()]\n\tswitch (format) {\n\t\tcase 'jpeg':\n\t\tcase 'png':\n\t\tcase 'webp':\n\t\tcase 'svg': {\n\t\t\treturn (await editor.toImage(idsToUse, { ...opts, format })).blob\n\t\t}\n\t\tdefault: {\n\t\t\texhaustiveSwitchError(format)\n\t\t}\n\t}\n}\n\nconst mimeTypeByFormat = {\n\tjpeg: 'image/jpeg',\n\tpng: 'image/png',\n\twebp: 'image/webp',\n\tsvg: 'image/svg+xml',\n}\n\nexport function exportToImagePromise(\n\teditor: Editor,\n\tids: TLShapeId[],\n\topts: TLImageExportOptions = {}\n): { blobPromise: Promise<Blob>; mimeType: string } {\n\tconst idsToUse = ids?.length ? ids : [...editor.getCurrentPageShapeIds()]\n\tconst format = opts.format ?? 'png'\n\treturn {\n\t\tblobPromise: editor.toImage(idsToUse, opts).then((result) => result.blob),\n\t\tmimeType: mimeTypeByFormat[format],\n\t}\n}\n"],
-   "mappings": "AAAA;AAAA,EAKC;AAAA,OACM;AAEP,eAAe,aAAa,QAAgB,KAAkB,MAA4B;AACzF,QAAM,MAAM,MAAM,OAAO,aAAa,KAAK,IAAI;AAC/C,MAAI,CAAC,KAAK;AACT,UAAM,IAAI,MAAM,0BAA0B;AAAA,EAC3C;AACA,SAAO;AACR;AAEA,eAAsB,eACrB,QACA,KACA,QACA,OAA6B,CAAC,GAC7B;AACD,UAAQ,QAAQ;AAAA,IACf,KAAK,OAAO;AACX,cAAQ,MAAM,aAAa,QAAQ,KAAK,IAAI,IAAI;AAAA,IACjD;AAAA,IACA,KAAK,QAAQ;AACZ,YAAM,OAAO,MAAM,OAAO,uBAAuB,OAAO,0BAA0B,GAAG,CAAC;AACtF,aAAO,KAAK,UAAU,IAAI;AAAA,IAC3B;AAAA,IACA,SAAS;AACR,4BAAsB,MAAM;AAAA,IAC7B;AAAA,EACD;AACD;AAYA,eAAsB,aAAa;AAAA,EAClC;AAAA,EACA;AAAA,EACA;AAAA,EACA,OAAO,CAAC;AACT,GAKkB;AACjB,QAAM,WAAW,KAAK,SAAS,MAAM,CAAC,GAAG,OAAO,uBAAuB,CAAC;AACxE,UAAQ,QAAQ;AAAA,IACf,KAAK;AAAA,IACL,KAAK;AAAA,IACL,KAAK;AAAA,IACL,KAAK,OAAO;AACX,cAAQ,MAAM,OAAO,QAAQ,UAAU,EAAE,GAAG,MAAM,OAAO,CAAC,GAAG;AAAA,IAC9D;AAAA,IACA,SAAS;AACR,4BAAsB,MAAM;AAAA,IAC7B;AAAA,EACD;AACD;AAEA,MAAM,mBAAmB;AAAA,EACxB,MAAM;AAAA,EACN,KAAK;AAAA,EACL,MAAM;AAAA,EACN,KAAK;AACN;AAEO,SAAS,qBACf,QACA,KACA,OAA6B,CAAC,GACqB;AACnD,QAAM,WAAW,KAAK,SAAS,MAAM,CAAC,GAAG,OAAO,uBAAuB,CAAC;AACxE,QAAM,SAAS,KAAK,UAAU;AAC9B,SAAO;AAAA,IACN,aAAa,OAAO,QAAQ,UAAU,IAAI,EAAE,KAAK,CAAC,WAAW,OAAO,IAAI;AAAA,IACxE,UAAU,iBAAiB,MAAM;AAAA,EAClC;AACD;",
+-  "sourcesContent": ["import {\n\tEditor,\n\tFileHelpers,\n\tTLExportType,\n\tTLImageExportOptions,\n\tTLShapeId,\n\texhaustiveSwitchError,\n} from '@tldraw/editor'\n\nasync function getSvgString(editor: Editor, ids: TLShapeId[], opts: TLImageExportOptions) {\n\tconst svg = await editor.getSvgString(ids, opts)\n\tif (!svg) {\n\t\tthrow new Error('Could not construct SVG.')\n\t}\n\treturn svg\n}\n\nexport async function exportToString(\n\teditor: Editor,\n\tids: TLShapeId[],\n\tformat: 'svg' | 'json',\n\topts: TLImageExportOptions = {}\n) {\n\tswitch (format) {\n\t\tcase 'svg': {\n\t\t\treturn (await getSvgString(editor, ids, opts))?.svg\n\t\t}\n\t\tcase 'json': {\n\t\t\tconst data = await editor.resolveAssetsInContent(editor.getContentFromCurrentPage(ids))\n\t\t\treturn JSON.stringify(data)\n\t\t}\n\t\tdefault: {\n\t\t\texhaustiveSwitchError(format)\n\t\t}\n\t}\n}\n\n/**\n * Export the given shapes as a blob.\n * @param editor - The editor instance.\n * @param ids - The ids of the shapes to export.\n * @param format - The format to export as.\n * @param opts - Rendering options.\n * @returns A promise that resolves to a blob.\n * @deprecated Use {@link @tldraw/editor#Editor.toImage} instead.\n * @public\n */\nexport async function exportToBlob({\n\teditor,\n\tids,\n\tformat,\n\topts = {},\n}: {\n\teditor: Editor\n\tids: TLShapeId[]\n\tformat: TLExportType\n\topts?: TLImageExportOptions\n}): Promise<Blob> {\n\tconst idsToUse = ids?.length ? ids : [...editor.getCurrentPageShapeIds()]\n\tswitch (format) {\n\t\tcase 'jpeg':\n\t\tcase 'png':\n\t\tcase 'webp':\n\t\tcase 'svg': {\n\t\t\treturn (await editor.toImage(idsToUse, { ...opts, format })).blob\n\t\t}\n\t\tdefault: {\n\t\t\texhaustiveSwitchError(format)\n\t\t}\n\t}\n}\n\nconst clipboardMimeTypesByFormat = {\n\tjpeg: 'image/jpeg',\n\tpng: 'image/png',\n\twebp: 'image/webp',\n\tsvg: 'text/plain',\n}\n\nexport function exportToImagePromiseForClipboard(\n\teditor: Editor,\n\tids: TLShapeId[],\n\topts: TLImageExportOptions = {}\n): { blobPromise: Promise<Blob>; mimeType: string } {\n\tconst idsToUse = ids?.length ? ids : [...editor.getCurrentPageShapeIds()]\n\tconst format = opts.format ?? 'png'\n\treturn {\n\t\tblobPromise: editor\n\t\t\t.toImage(idsToUse, opts)\n\t\t\t.then((result) =>\n\t\t\t\tFileHelpers.rewriteMimeType(result.blob, clipboardMimeTypesByFormat[format])\n\t\t\t),\n\t\tmimeType: clipboardMimeTypesByFormat[format],\n\t}\n}\n"],
++  "sourcesContent": ["import {\n\tEditor,\n\tFileHelpers,\n\tTLExportType,\n\tTLImageExportOptions,\n\tTLShapeId,\n\texhaustiveSwitchError,\n} from '@tldraw/editor'\n\nasync function getSvgString(editor: Editor, ids: TLShapeId[], opts: TLImageExportOptions) {\n\tconst svg = await editor.getSvgString(ids, opts)\n\tif (!svg) {\n\t\tthrow new Error('Could not construct SVG.')\n\t}\n\treturn svg\n}\n\nexport async function exportToString(\n\teditor: Editor,\n\tids: TLShapeId[],\n\tformat: 'svg' | 'json',\n\topts: TLImageExportOptions = {}\n) {\n\tswitch (format) {\n\t\tcase 'svg': {\n\t\t\treturn (await getSvgString(editor, ids, opts))?.svg\n\t\t}\n\t\tcase 'json': {\n\t\t\tconst data = await editor.resolveAssetsInContent(editor.getContentFromCurrentPage(ids))\n\t\t\treturn JSON.stringify(data)\n\t\t}\n\t\tdefault: {\n\t\t\texhaustiveSwitchError(format)\n\t\t}\n\t}\n}\n\n/**\n * Export the given shapes as a blob.\n * @param editor - The editor instance.\n * @param ids - The ids of the shapes to export.\n * @param format - The format to export as.\n * @param opts - Rendering options.\n * @returns A promise that resolves to a blob.\n * @deprecated Use {@link @tldraw/editor#Editor.toImage} instead.\n * @public\n */\nexport async function exportToBlob({\n\teditor,\n\tids,\n\tformat,\n\topts = {},\n}: {\n\teditor: Editor\n\tids: TLShapeId[]\n\tformat: TLExportType\n\topts?: TLImageExportOptions\n}): Promise<Blob> {\n\tconst idsToUse = ids?.length ? ids : [...editor.getCurrentPageShapeIds()]\n\tswitch (format) {\n\t\tcase 'jpeg':\n\t\tcase 'png':\n\t\tcase 'webp':\n\t\tcase 'svg': {\n\t\t\treturn (await editor.toImage(idsToUse, { ...opts, format })).blob\n\t\t}\n\t\tdefault: {\n\t\t\texhaustiveSwitchError(format)\n\t\t}\n\t}\n}\n\nconst clipboardMimeTypesByFormat = {\n\tjpeg: 'image/jpeg',\n\tpng: 'image/png',\n\twebp: 'image/webp',\n\tsvg: 'image/svg+xml',\n}\n\nexport function exportToImagePromiseForClipboard(\n\teditor: Editor,\n\tids: TLShapeId[],\n\topts: TLImageExportOptions = {}\n): { blobPromise: Promise<Blob>; mimeType: string } {\n\tconst idsToUse = ids?.length ? ids : [...editor.getCurrentPageShapeIds()]\n\tconst format = opts.format ?? 'png'\n\treturn {\n\t\tblobPromise: editor\n\t\t\t.toImage(idsToUse, opts)\n\t\t\t.then((result) =>\n\t\t\t\tFileHelpers.rewriteMimeType(result.blob, clipboardMimeTypesByFormat[format])\n\t\t\t),\n\t\tmimeType: clipboardMimeTypesByFormat[format],\n\t}\n}\n"],
+   "mappings": "AAAA;AAAA,EAEC;AAAA,EAIA;AAAA,OACM;AAEP,eAAe,aAAa,QAAgB,KAAkB,MAA4B;AACzF,QAAM,MAAM,MAAM,OAAO,aAAa,KAAK,IAAI;AAC/C,MAAI,CAAC,KAAK;AACT,UAAM,IAAI,MAAM,0BAA0B;AAAA,EAC3C;AACA,SAAO;AACR;AAEA,eAAsB,eACrB,QACA,KACA,QACA,OAA6B,CAAC,GAC7B;AACD,UAAQ,QAAQ;AAAA,IACf,KAAK,OAAO;AACX,cAAQ,MAAM,aAAa,QAAQ,KAAK,IAAI,IAAI;AAAA,IACjD;AAAA,IACA,KAAK,QAAQ;AACZ,YAAM,OAAO,MAAM,OAAO,uBAAuB,OAAO,0BAA0B,GAAG,CAAC;AACtF,aAAO,KAAK,UAAU,IAAI;AAAA,IAC3B;AAAA,IACA,SAAS;AACR,4BAAsB,MAAM;AAAA,IAC7B;AAAA,EACD;AACD;AAYA,eAAsB,aAAa;AAAA,EAClC;AAAA,EACA;AAAA,EACA;AAAA,EACA,OAAO,CAAC;AACT,GAKkB;AACjB,QAAM,WAAW,KAAK,SAAS,MAAM,CAAC,GAAG,OAAO,uBAAuB,CAAC;AACxE,UAAQ,QAAQ;AAAA,IACf,KAAK;AAAA,IACL,KAAK;AAAA,IACL,KAAK;AAAA,IACL,KAAK,OAAO;AACX,cAAQ,MAAM,OAAO,QAAQ,UAAU,EAAE,GAAG,MAAM,OAAO,CAAC,GAAG;AAAA,IAC9D;AAAA,IACA,SAAS;AACR,4BAAsB,MAAM;AAAA,IAC7B;AAAA,EACD;AACD;AAEA,MAAM,6BAA6B;AAAA,EAClC,MAAM;AAAA,EACN,KAAK;AAAA,EACL,MAAM;AAAA,EACN,KAAK;AACN;AAEO,SAAS,iCACf,QACA,KACA,OAA6B,CAAC,GACqB;AACnD,QAAM,WAAW,KAAK,SAAS,MAAM,CAAC,GAAG,OAAO,uBAAuB,CAAC;AACxE,QAAM,SAAS,KAAK,UAAU;AAC9B,SAAO;AAAA,IACN,aAAa,OACX,QAAQ,UAAU,IAAI,EACtB;AAAA,MAAK,CAAC,WACN,YAAY,gBAAgB,OAAO,MAAM,2BAA2B,MAAM,CAAC;AAAA,IAC5E;AAAA,IACD,UAAU,2BAA2B,MAAM;AAAA,EAC5C;AACD;",
    "names": []
  }
 diff --git a/node_modules/tldraw/src/lib/Tldraw.tsx b/node_modules/tldraw/src/lib/Tldraw.tsx
@@ -1035,10 +1035,10 @@ index 2612566..1296abe 100644
  	// @ts-expect-error
  	fontInstance.$$_url = url
 diff --git a/node_modules/tldraw/src/lib/utils/export/export.ts b/node_modules/tldraw/src/lib/utils/export/export.ts
-index 208c77b..e46214d 100644
+index 15c9378..97d0d22 100644
 --- a/node_modules/tldraw/src/lib/utils/export/export.ts
 +++ b/node_modules/tldraw/src/lib/utils/export/export.ts
-@@ -73,7 +73,7 @@ const mimeTypeByFormat = {
+@@ -74,7 +74,7 @@ const clipboardMimeTypesByFormat = {
  	jpeg: 'image/jpeg',
  	png: 'image/png',
  	webp: 'image/webp',
@@ -1046,4 +1046,4 @@ index 208c77b..e46214d 100644
 +	svg: 'image/svg+xml',
  }
  
- export function exportToImagePromise(
+ export function exportToImagePromiseForClipboard(
