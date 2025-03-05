@@ -38,6 +38,11 @@ export default class IconsSettingsManager {
 
     onChanged(icon: IconNames, callback: () => void) {
         this.onChangedCallbacks.set(icon, callback);
+        return () => {
+            if (this.onChangedCallbacks.get(icon) === callback) {
+                this.onChangedCallbacks.delete(icon);
+            }
+        }
     }
 
     async saveIconSettings(updates: {

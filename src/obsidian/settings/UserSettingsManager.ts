@@ -20,6 +20,7 @@ export default class UserSettingsManager {
 
     get settings() { return this.#plugin.settings; }
     get store() { return Object.assign({}, this.#store); }
+    get plugin() { return this.#plugin }
 
     #notifyStoreSubscribers() {
         this.#subscribers.forEach((e) => e());

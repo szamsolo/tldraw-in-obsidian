@@ -344,3 +344,29 @@ div[data-type="tldraw-read-only"] .view-content.tldraw-view-content {
 	border-color: transparent transparent var(--background-modifier-border) transparent;
 	cursor: row-resize;
 }
+
+.ptl-settings-tab-header {
+	display: flex;
+	overflow-y: hidden;
+}
+
+.ptl-settings-tab-container {
+	display: flex;
+	gap: var(--size-4-2);
+}
+
+.ptl-settings-tab-container .ptl-settings-tab-item {
+	font-weight: var(--font-semibold);
+	padding: var(--size-4-3);
+	border-radius: var(--radius-m);
+	width: max-content;
+}
+
+.ptl-settings-tab-container .ptl-settings-tab-item:hover {
+	cursor: pointer;
+}
+
+.ptl-settings-tab-item[data-is-active=true] {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+}

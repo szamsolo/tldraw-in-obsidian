@@ -1,10 +1,10 @@
 import { Notice, setIcon, SuggestModal, TFolder } from "obsidian";
-import { destinationMethods, destinationMethodsRecord } from "../TldrawSettingsTab";
 import TldrawPlugin from "src/main";
 import { TLDRAW_ICON_NAME } from "src/utils/constants";
 import { FileSearchCanceled, FileSearchModal } from "./FileSearchModal";
 import { getAttachmentsFolder, validateFolderPath } from "../helpers/app";
 import { getColocationDestination } from "../plugin/file-destination";
+import { destinationMethods, destinationMethodsRecord } from "../settings/constants";
 
 type Result = {
     filename: string,

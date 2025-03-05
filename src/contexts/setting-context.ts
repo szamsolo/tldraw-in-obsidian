@@ -2,6 +2,7 @@ import { Setting } from "obsidian";
 import { createContext } from "react";
 
 export const SettingContext = createContext<Setting | undefined>(undefined);
+export const SettingContainerContext = createContext<HTMLElement | undefined>(undefined);
 export const SettingSlotContext = createContext<{
     setting: Setting,
     /**
