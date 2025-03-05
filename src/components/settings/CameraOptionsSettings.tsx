@@ -66,7 +66,7 @@ export default function CameraOptionsSettings() {
                         <>
                             <Setting.Dropdown
                                 options={wheelBehaviorOptions}
-                                value={settings.cameraOptions?.wheelBehavior}
+                                value={settings.cameraOptions?.wheelBehavior ?? 'pan'}
                                 onChange={onWheelBehaviorChange}
                             />
                         </>
