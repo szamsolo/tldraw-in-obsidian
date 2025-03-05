@@ -1,5 +1,5 @@
 import TldrawPlugin from "src/main";
-import { DEFAULT_SETTINGS, FileDestinationsSettings, TldrawPluginSettings } from "../TldrawSettingsTab";
+import { DEFAULT_SETTINGS, FileDestinationsSettings, TldrawPluginSettings, UserTLCameraOptions } from "../TldrawSettingsTab";
 
 type UserTldrawOptions = NonNullable<TldrawPluginSettings['tldrawOptions']>;
 
@@ -20,6 +20,7 @@ export default class UserSettingsManager {
 
     get settings() { return this.#plugin.settings; }
     get store() { return Object.assign({}, this.#store); }
+    get plugin() { return this.#plugin }
 
     #notifyStoreSubscribers() {
         this.#subscribers.forEach((e) => e());
@@ -105,6 +106,32 @@ export default class UserSettingsManager {
             tldrawOptions.laserKeepDelayAfterStop = keepDelay;
         }
         this.#plugin.settings.tldrawOptions = Object.assign({}, tldrawOptions);
+        this.updateSettings(this.#plugin.settings);
+    }
+
+    async updateEditorWheelBehavior(wheelBehavior: UserTLCameraOptions['wheelBehavior']) {
+        let options = this.#plugin.settings.cameraOptions;
+        if (wheelBehavior === options?.wheelBehavior) return;
+        if (wheelBehavior === undefined) {
+            delete options?.wheelBehavior;
+        } else {
+            if (!options) options = {};
+            options.wheelBehavior = wheelBehavior;
+        }
+        this.#plugin.settings.cameraOptions = Object.assign({}, options);
+        this.updateSettings(this.#plugin.settings);
+    }
+
+    async updatePasteAtCursor(pasteAtCursor: NonNullable<TldrawPluginSettings['clipboard']>['pasteAtCursor']) {
+        let options = this.#plugin.settings.clipboard;
+        if (pasteAtCursor === options?.pasteAtCursor) return;
+        if (pasteAtCursor === undefined) {
+            delete options?.pasteAtCursor;
+        } else {
+            if (!options) options = {};
+            options.pasteAtCursor = pasteAtCursor;
+        }
+        this.#plugin.settings.clipboard = Object.assign({}, options);
         this.updateSettings(this.#plugin.settings);
     }
 }

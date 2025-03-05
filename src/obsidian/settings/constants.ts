@@ -160,3 +160,17 @@ export const iconTypes = [
 	'zoom-in',
 	'zoom-out',
 ] as const;
+
+export const themePreferenceRecord = {
+	light: 'Light theme',
+	dark: 'Dark theme',
+	'match-theme': 'Match theme',
+}
+
+export const destinationMethods = ['attachments-folder', 'colocate', 'default-folder'] as const;
+
+export const destinationMethodsRecord = {
+	'colocate': 'Colocate file',
+	'default-folder': 'Use default folder',
+	'attachments-folder': 'Use attachments folder',
+} satisfies Record<typeof destinationMethods[number], string>;

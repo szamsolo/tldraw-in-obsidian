@@ -1,7 +1,11 @@
-import { Editor, exportToBlob, TLUiActionItem, TLUiActionsContextType, TLUiEventContextType, TLUiEventMap, TLUiEventSource, TLUiOverrideHelpers, TLUiOverrides, useUiEvents } from "tldraw";
+import { Editor, TLExportType, TLImageExportOptions, TLUiActionItem, TLUiActionsContextType, TLUiEventContextType, TLUiEventSource, TLUiOverrideHelpers, TLUiOverrides, useUiEvents } from "tldraw";
 import { Platform } from "obsidian";
 import TldrawPlugin from "src/main";
 import { downloadBlob, getSaveFileCopyAction, getSaveFileCopyInVaultAction, importFileAction, OPEN_FILE_ACTION, SAVE_FILE_COPY_ACTION, SAVE_FILE_COPY_IN_VAULT_ACTION } from "src/utils/file";
+
+const DEFAULT_CAMERA_STEPS = [0.1, 0.25, 0.5, 1, 2, 4, 8];
+
+export const PLUGIN_ACTION_TOGGLE_ZOOM_LOCK = 'toggle-zoom-lock';
 
 export function uiOverrides(plugin: TldrawPlugin): TLUiOverrides {
 	const trackEvent = useUiEvents();
@@ -32,13 +36,34 @@ export function uiOverrides(plugin: TldrawPlugin): TLUiOverrides {
 
 			actions[OPEN_FILE_ACTION] = importFileAction(plugin, addDialog);
 
-			(['json', 'png', 'svg'] satisfies TLExportAllAsFormatType[]).map((e) => exportAllAsOverride(editor, actions, plugin, {
-				type: e,
+			(['jpeg', 'png', 'svg', 'webp'] satisfies TLExportType[]).map((e) => exportAllAsOverride(editor, actions, plugin, {
+				exportOptions: {
+					format: e,
+				},
 				defaultDocumentName,
 				trackEvent
-			}))
+			}));
 
 			actions['paste'] = pasteFromClipboardOverride(editor, { msg, paste, addToast });
+
+			/**
+			 * https://tldraw.dev/examples/editor-api/lock-camera-zoom
+			 */
+			actions[PLUGIN_ACTION_TOGGLE_ZOOM_LOCK] = {
+				id: PLUGIN_ACTION_TOGGLE_ZOOM_LOCK,
+				label: {
+					default: 'Toggle zoom lock'
+				},
+				icon: PLUGIN_ACTION_TOGGLE_ZOOM_LOCK,
+				kbd: '!k',
+				readonlyOk: true,
+				onSelect() {
+					const isCameraZoomLockedAlready = editor.getCameraOptions().zoomSteps.length === 1
+					editor.setCameraOptions({
+						zoomSteps: isCameraZoomLockedAlready ? DEFAULT_CAMERA_STEPS : [editor.getZoomLevel()],
+					})
+				},
+			}
 
 			return actions;
 		},
@@ -63,30 +88,28 @@ export function uiOverrides(plugin: TldrawPlugin): TLUiOverrides {
 	}
 }
 
-type TLExportAllAsFormatType = TLUiEventMap['export-all-as']['format']
-
 function exportAllAsOverride(editor: Editor, actions: TLUiActionsContextType, plugin: TldrawPlugin, options: {
-	type: TLExportAllAsFormatType,
+	exportOptions?: TLImageExportOptions,
 	trackEvent: TLUiEventContextType,
 	defaultDocumentName: string
 }) {
-	const key = `export-all-as-${options.type}` as const;
+	const format = options.exportOptions?.format ?? 'png';
+	const key = `export-all-as-${format}` as const;
 	actions[key] = {
 		...actions[key],
 		async onSelect(source) {
 			const ids = Array.from(editor.getCurrentPageShapeIds().values())
 			if (ids.length === 0) return
-			options.trackEvent('export-all-as', { format: options.type, source })
 
-			const blob = await exportToBlob({
-				editor,
-				ids,
-				format: options.type,
-				// TODO: Make use of opts
-				// opts
+			options.trackEvent('export-all-as', {
+				// @ts-ignore
+				format,
+				source
 			})
 
-			const res = await downloadBlob(blob, `${options.defaultDocumentName}.${options.type}`, plugin);
+			const blob = (await editor.toImage(ids, options.exportOptions)).blob;
+
+			const res = await downloadBlob(blob, `${options.defaultDocumentName}.${format}`, plugin);
 
 			if (typeof res === 'object') {
 				res.showResultModal()

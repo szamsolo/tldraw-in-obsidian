@@ -195,6 +195,7 @@ export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
                     else if (themeMode === "light") return false;
                     else return isObsidianThemeDark();
                 })(),
+                targetDocument: containerEl.ownerDocument,
             },
         };
     }

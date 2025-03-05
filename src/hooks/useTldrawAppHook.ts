@@ -4,7 +4,7 @@ import TldrawPlugin from "src/main";
 import { TldrawPluginMetaData } from "src/utils/document";
 import { isObsidianThemeDark } from "src/utils/utils";
 import monkeyPatchEditorInstance from "src/tldraw/monkey-patch/editor";
-import useUserTldrawOptions from "./useUserTldrawOptions";
+import useUserPluginSettings from "./useUserPluginSettings";
 
 export type SetTldrawFileData = (data: {
     meta: TldrawPluginMetaData
@@ -24,7 +24,7 @@ export function useTldrawAppEffects({
     setFocusedEditor: (editor: Editor) => void,
     onEditorMount?: (editor: Editor) => void,
 }) {
-    const settings = useUserTldrawOptions(settingsManager);
+    const settings = useUserPluginSettings(settingsManager);
 
     /**
      * Effect for editor mounting
@@ -85,5 +85,13 @@ export function useTldrawAppEffects({
             // NOTE: We do not want to re-render the editor, so we do not pass it to the TldrawApp component.
             editor.options.laserDelayMs = laserDelayMs;
         }
+
+        if (settings.cameraOptions) {
+            editor.setCameraOptions(settings.cameraOptions);
+        }
+
+        editor.user.updateUserPreferences({
+            isPasteAtCursorMode: settings.clipboard?.pasteAtCursor
+        });
     }, [editor, settings]);
 }

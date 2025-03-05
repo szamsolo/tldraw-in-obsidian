@@ -23,6 +23,11 @@ export default class FontsSettingsManager {
 
     onChanged(font: FontTypes, callback: () => void) {
         this.onChangedCallbacks.set(font, callback);
+        return () => {
+            if (this.onChangedCallbacks.get(font) === callback) {
+                this.onChangedCallbacks.delete(font);
+            }
+        }
     }
 
     getDownloadConfig(font: FontTypes): DownloadInfo {

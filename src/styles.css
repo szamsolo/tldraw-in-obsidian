@@ -45,6 +45,18 @@
 	color: var(--color-selected-contrast);
 }
 
+.tldraw-view-root .ptl-quick-action-button-wrapper[data-selected=true] .tlui-button__icon {
+	color: var(--color-selected-contrast);
+}
+
+.tldraw-view-root .ptl-quick-action-button-wrapper[data-selected=true] .tlui-button::before {
+	content: "";
+	position: absolute;
+	inset: 4px;
+	border-radius: var(--radius-2);
+	background-color: var(--color-selected);
+}
+
 /* OVERRIDING button:not(.clickable-icon) */
 .tldraw-view-root .tlui-button.tlui-help-menu__button {
 	background-color: var(--color-low);
@@ -195,6 +207,10 @@ div[data-type="tldraw-read-only"] .view-content.tldraw-view-content {
 	max-inline-size: max-content;
 }
 
+.ptl-markdown-embed .ptl-view-content {
+	height: max-content;
+}
+
 .ptl-view-content:empty {
 	min-width: var(--ptl-placeholder-width);
 	min-height: var(--ptl-placeholder-height);
@@ -327,4 +343,35 @@ div[data-type="tldraw-read-only"] .view-content.tldraw-view-content {
 	border-width: 0 0 16px 16px;
 	border-color: transparent transparent var(--background-modifier-border) transparent;
 	cursor: row-resize;
+}
+
+.ptl-settings-tab-header {
+	display: flex;
+	overflow-y: hidden;
+}
+
+.ptl-settings-tab-container {
+	display: flex;
+	gap: var(--size-4-2);
+}
+
+.ptl-settings-tab-container .ptl-settings-tab-item {
+	font-weight: var(--font-semibold);
+	padding-block: var(--size-2-3);
+	padding-inline: var(--size-4-3);
+	border-radius: var(--radius-m);
+	width: max-content;
+}
+
+.ptl-settings-tab-container .ptl-settings-tab-item:hover {
+	cursor: pointer;
+}
+
+.ptl-settings-tab-item[data-is-active=false]:hover {
+    background-color: var(--interactive-hover);
+}
+
+.ptl-settings-tab-item[data-is-active=true] {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
 }
