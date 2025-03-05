@@ -17,7 +17,7 @@ const TABS = {
         Component: StartUpSettings,
     },
     'tldraw-editor-options': {
-        label: 'Tldraw editor options',
+        label: 'Tldraw editor',
         Component: TldrawEditorOptions,
     },
     'embeds': {

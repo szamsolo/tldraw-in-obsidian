@@ -357,13 +357,18 @@ div[data-type="tldraw-read-only"] .view-content.tldraw-view-content {
 
 .ptl-settings-tab-container .ptl-settings-tab-item {
 	font-weight: var(--font-semibold);
-	padding: var(--size-4-3);
+	padding-block: var(--size-2-3);
+	padding-inline: var(--size-4-3);
 	border-radius: var(--radius-m);
 	width: max-content;
 }
 
 .ptl-settings-tab-container .ptl-settings-tab-item:hover {
 	cursor: pointer;
+}
+
+.ptl-settings-tab-item[data-is-active=false]:hover {
+    background-color: var(--interactive-hover);
 }
 
 .ptl-settings-tab-item[data-is-active=true] {

@@ -72,10 +72,56 @@ function TldrawEditorOptionsGroup() {
     )
 }
 
+function ClipboardOptionsGroup() {
+    const settingsManager = useSettingsManager();
+    const settings = useUserPluginSettings(settingsManager);
+    const onPasteAtCursor = useCallback(async (value: boolean) => {
+        await settingsManager.updatePasteAtCursor(value);
+    }, [settingsManager]);
+
+    const resetPasteAtCursor = useCallback(async () => {
+        await settingsManager.updatePasteAtCursor(undefined);
+    }, [settingsManager]);
+    return (
+        <>
+            <Setting
+                slots={{
+                    name: 'Paste at cursor',
+                    desc: (
+                        <>
+                            This can be accessed in the editor by navigating the menu:<br />
+                            <code>
+                                {'Menu > Preferences > Paste at cursor'}
+                            </code>
+                        </>
+                    ),
+                    control: (
+                        <>
+                            <Setting.Toggle
+                                value={!!settings.clipboard?.pasteAtCursor}
+                                onChange={onPasteAtCursor}
+                            />
+                            <Setting.ExtraButton
+                                icon={'reset'}
+                                tooltip={'reset'}
+                                onClick={resetPasteAtCursor}
+                            />
+                        </>
+                    )
+                }}
+            />
+        </>
+    )
+}
+
 export default function TldrawEditorOptions() {
     return (
         <>
-            <h2>Options</h2>
+            <h2>Clipboard options</h2>
+            <Setting.Container>
+                <ClipboardOptionsGroup />
+            </Setting.Container>
+            <h2>Pointer options</h2>
             <Setting.Container>
                 <TldrawEditorOptionsGroup />
             </Setting.Container>

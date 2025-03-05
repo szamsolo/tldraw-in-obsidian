@@ -89,5 +89,9 @@ export function useTldrawAppEffects({
         if (settings.cameraOptions) {
             editor.setCameraOptions(settings.cameraOptions);
         }
+
+        editor.user.updateUserPreferences({
+            isPasteAtCursorMode: settings.clipboard?.pasteAtCursor
+        });
     }, [editor, settings]);
 }

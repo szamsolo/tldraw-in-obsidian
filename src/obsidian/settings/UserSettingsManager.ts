@@ -121,4 +121,17 @@ export default class UserSettingsManager {
         this.#plugin.settings.cameraOptions = Object.assign({}, options);
         this.updateSettings(this.#plugin.settings);
     }
+
+    async updatePasteAtCursor(pasteAtCursor: NonNullable<TldrawPluginSettings['clipboard']>['pasteAtCursor']) {
+        let options = this.#plugin.settings.clipboard;
+        if (pasteAtCursor === options?.pasteAtCursor) return;
+        if (pasteAtCursor === undefined) {
+            delete options?.pasteAtCursor;
+        } else {
+            if (!options) options = {};
+            options.pasteAtCursor = pasteAtCursor;
+        }
+        this.#plugin.settings.clipboard = Object.assign({}, options);
+        this.updateSettings(this.#plugin.settings);
+    }
 }

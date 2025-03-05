@@ -121,6 +121,9 @@ export interface TldrawPluginSettings extends DeprecatedFileDestinationSettings 
 	 * Options that apply to the editor camera
 	 */
 	cameraOptions?: UserTLCameraOptions,
+	clipboard?: {
+		pasteAtCursor?: boolean,
+	}
 }
 
 export const DEFAULT_SETTINGS = {
