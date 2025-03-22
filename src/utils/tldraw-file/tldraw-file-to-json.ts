@@ -29,7 +29,7 @@ function pruneNonJSONValues(data: unknown): undefined | JsonValue {
     const json: JsonObject = {};
 
     for (const [key, val] of Object.entries(data)) {
-        if (data.hasOwnProperty(key)) {
+        if (key in data) {
             const prunedValue = pruneNonJSONValues(val);
             if (prunedValue !== undefined) {
                 json[key] = prunedValue;

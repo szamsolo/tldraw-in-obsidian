@@ -135,7 +135,7 @@ export class ObsidianMarkdownFileTLAssetStoreProxy {
         const assetFileBlob = new Blob(
             [assetData],
             {
-                type: Buffer.from(assetData.slice(0, 4)).toString() === '<svg'
+                type: assetData.slice(0, 4).toString() === '<svg'
                     ? 'image/svg+xml' : undefined
             }
         );

@@ -1,6 +1,6 @@
 {
 	"name": "tldraw-in-obsidian",
-	"version": "1.20.0",
+	"version": "1.21.0",
 	"description": "Integrates Tldraw into Obsidian, allowing users to draw and edit content on a virtual whiteboard.",
 	"main": "main.js",
 	"scripts": {
@@ -19,9 +19,11 @@
 		"notes"
 	],
 	"author": "Sam Alhaqab",
-	"contributors": ["Jonathan Mendez <dev@jon-dez.com> (https://github.com/sponsors/jon-dez)", "Sam Alhaqab"],
+	"contributors": [
+		"Jonathan Mendez <dev@jon-dez.com> (https://github.com/sponsors/jon-dez)",
+		"Sam Alhaqab"
+	],
 	"devDependencies": {
-		"@types/node": "^16.11.6",
 		"@types/react": "^18.3.5",
 		"@types/react-dom": "^18.3.0",
 		"@typescript-eslint/eslint-plugin": "7.12.0",
@@ -29,16 +31,15 @@
 		"builtin-modules": "3.3.0",
 		"esbuild": "^0.23.1",
 		"obsidian": "latest",
+		"patch-package": "^8.0.0",
 		"tslib": "2.6.3",
 		"typescript": "^5.5.4"
 	},
 	"dependencies": {
 		"monkey-around": "^2.3.0",
-		"patch-package": "^8.0.0",
 		"react": "^18.3.1",
 		"react-dom": "^18.3.1",
-		"tldraw": "^3.9.0",
-		"use-debounce": "^9.0.4",
+		"tldraw": "^3.11.0",
 		"zustand": "^4.3.9"
 	}
 }
