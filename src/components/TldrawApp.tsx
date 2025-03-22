@@ -242,7 +242,6 @@ const TldrawApp = ({ plugin, store,
 				autoFocus={false}
 				onMount={setAppState}
 				tools={tools}
-				targetDocument={ownerDocument}
 			/>
 		</div>
 	);

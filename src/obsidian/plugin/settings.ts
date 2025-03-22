@@ -18,19 +18,19 @@ export function processFontOverrides(
     const processed: NonNullable<FontOverridesSettings> = {};
 
     if (draw !== undefined) {
-        processed.draw = getResourcePath(draw);
+        processed.tldraw_draw = getResourcePath(draw);
     }
 
     if (monospace !== undefined) {
-        processed.monospace = getResourcePath(monospace);
+        processed.tldraw_mono = getResourcePath(monospace);
     }
 
     if (sansSerif !== undefined) {
-        processed.sansSerif = getResourcePath(sansSerif);
+        processed.tldraw_sans = getResourcePath(sansSerif);
     }
 
     if (serif !== undefined) {
-        processed.serif = getResourcePath(serif);
+        processed.tldraw_serif = getResourcePath(serif);
     }
 
     return processed;
