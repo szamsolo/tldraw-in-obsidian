@@ -7,7 +7,7 @@ import IconsSettingsManager from "src/obsidian/settings/IconsSettingsManager";
 import FontsSettingsManager from "src/obsidian/settings/FontsSettingsManager";
 import { FontTypes, IconNames } from "src/types/tldraw";
 import { DownloadInfo } from "src/utils/fetch/download";
-import { defaultFonts, fontExtensions, iconExtensions, iconTypes } from "src/obsidian/settings/constants";
+import { defaultFonts, fontExtensions, FontGroupMatcher, iconExtensions, iconTypes } from "src/obsidian/settings/constants";
 import { FileSearchModal } from "src/obsidian/modal/FileSearchModal";
 import { Notice, TFile, TFolder } from "obsidian";
 import { TLDRAW_VERSION } from "src/utils/constants";
@@ -120,19 +120,11 @@ const MemoAssetsSettingsGroup = memo(({ downloadAll }: Pick<ComponentProps<typeo
 function FontOverrideSetting({
     downloadFont,
     manager,
-    setting: {
-        font,
-        name,
-        appearsAs,
-    }
+    font,
 }: {
     downloadFont: (font: FontTypes, config: DownloadInfo) => void,
     manager: FontsSettingsManager,
-    setting: {
-        name: string,
-        font: keyof typeof defaultFonts,
-        appearsAs: string,
-    }
+    font: FontTypes,
 }) {
     const store = useMemo(() => (
         {
@@ -177,8 +169,7 @@ function FontOverrideSetting({
         <>
             <Setting
                 slots={{
-                    name,
-                    desc: `Appears as "${appearsAs}" in the style panel.`,
+                    name: font,
                     control: (
                         <>
                             <Setting.Text
@@ -212,25 +203,29 @@ function FontOverrideSetting({
 const fontOverrideSettingProps = [
     {
         name: 'Draw (handwriting) font',
-        font: 'draw',
+        group: '_draw',
         appearsAs: 'draw',
     },
     {
         name: 'Sans-serif font',
-        font: 'sansSerif',
+        group: '_sans',
         appearsAs: 'sans',
     },
     {
         name: 'Serif font',
-        font: 'serif',
+        group: '_serif',
         appearsAs: 'serif',
     },
     {
         name: 'Monospace font',
-        font: 'monospace',
+        group: '_mono',
         appearsAs: 'mono',
     }
-] satisfies ComponentProps<typeof FontOverrideSetting>['setting'][]
+] satisfies {
+    name: string,
+    group: FontGroupMatcher,
+    appearsAs: string,
+}[]
 
 const MemoFontAssetsSettingsGroup = memo(({
     downloadAll,
@@ -246,9 +241,24 @@ const MemoFontAssetsSettingsGroup = memo(({
             <FontAssetsSettingsGroup downloadAll={downloadAll} />
         </Setting.Container>
         <h2>Font assets overrides</h2>
-        <Setting.Container>
-            {fontOverrideSettingProps.map((props) => <FontOverrideSetting key={props.font} downloadFont={downloadFont} manager={manager} setting={props} />)}
-        </Setting.Container>
+        {fontOverrideSettingProps.map((props) => (
+            <Setting.Container className="ptl-settings-font-group" key={props.group}>
+                <Setting
+                    slots={{
+                        name: <h3>{props.name}</h3>,
+                        desc: `Appears as "${props.appearsAs}" in the style panel.`,
+                    }}
+                >
+                    {
+                        Object.keys(defaultFonts).filter((key) => key.includes(props.group)).map((key) => (
+                            <FontOverrideSetting key={key} downloadFont={downloadFont} manager={manager}
+                                font={key as keyof typeof defaultFonts}
+                            />
+                        ))
+                    }
+                </Setting>
+            </Setting.Container>
+        ))}
     </>
 ));
 

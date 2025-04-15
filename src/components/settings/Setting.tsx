@@ -1,5 +1,5 @@
 import { ButtonComponent, DropdownComponent, ExtraButtonComponent, MomentFormatComponent, Setting as ObsidianSetting, TextComponent, ToggleComponent } from "obsidian";
-import React, { ContextType, ReactNode, useContext, useEffect, useLayoutEffect, useMemo, useState } from "react";
+import React, { ComponentPropsWithoutRef, ContextType, ReactNode, useContext, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { SettingContainerContext, SettingContext, SettingSlotContext } from "src/contexts/setting-context";
 
@@ -235,12 +235,13 @@ Setting.ExtraButton = function ExtraButton({
 
 Setting.Container = function Container({
     children,
+    ...otherContainerProps
 }: {
     children: ReactNode | ((containerEl: HTMLElement) => ReactNode),
-}) {
+} & Omit<ComponentPropsWithoutRef<'div'>, 'children'>) {
     const [contentEl, setContentEl] = useState<HTMLElement | null>(null);
     return (
-        <div ref={setContentEl}>
+        <div ref={setContentEl} {...otherContainerProps}>
             {!contentEl ? undefined : (
                 <SettingContainerContext.Provider value={contentEl}>
                     {

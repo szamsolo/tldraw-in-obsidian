@@ -1,9 +1,23 @@
 export const defaultFonts = {
-	monospace: 'IBMPlexMono-Medium.woff2',
-	sansSerif: 'IBMPlexSans-Medium.woff2',
-	serif: 'IBMPlexSerif-Medium.woff2',
-	draw: 'Shantell_Sans-Tldrawish.woff2',
+	tldraw_mono: 'IBMPlexMono-Medium.woff2',
+	tldraw_mono_italic: 'IBMPlexMono-MediumItalic.woff2',
+	tldraw_mono_bold: 'IBMPlexMono-Bold.woff2',
+	tldraw_mono_italic_bold: 'IBMPlexMono-BoldItalic.woff2',
+	tldraw_serif: 'IBMPlexSerif-Medium.woff2',
+	tldraw_serif_italic: 'IBMPlexSerif-MediumItalic.woff2',
+	tldraw_serif_bold: 'IBMPlexSerif-Bold.woff2',
+	tldraw_serif_italic_bold: 'IBMPlexSerif-BoldItalic.woff2',
+	tldraw_sans: 'IBMPlexSans-Medium.woff2',
+	tldraw_sans_italic: 'IBMPlexSans-MediumItalic.woff2',
+	tldraw_sans_bold: 'IBMPlexSans-Bold.woff2',
+	tldraw_sans_italic_bold: 'IBMPlexSans-BoldItalic.woff2',
+	tldraw_draw: 'Shantell_Sans-Informal_Regular.woff2',
+	tldraw_draw_italic: 'Shantell_Sans-Informal_Regular_Italic.woff2',
+	tldraw_draw_bold: 'Shantell_Sans-Informal_Bold.woff2',
+	tldraw_draw_italic_bold: 'Shantell_Sans-Informal_Bold_Italic.woff2',
 } as const;
+
+export type FontGroupMatcher = '_draw' | '_mono' | '_sans' | '_serif'
 
 export const fontExtensions = [
 	'otf',

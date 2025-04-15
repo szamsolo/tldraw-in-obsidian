@@ -67,12 +67,44 @@ export default class UserSettingsManager {
         delete rest.useAttachmentsFolder;
         const restMerged = Object.assign({}, restDefault, rest);
 
-        this.#plugin.settings = {
+        const settings = {
             embeds: embedsMerged,
             fileDestinations: fileDestinationsMerged,
             tldrawOptions,
             ...restMerged
         };
+
+        if(settings.fonts?.overrides){
+            /**
+             * Migrate the old font overrides to the new format.
+             */
+
+            const { draw, monospace, sansSerif, serif } = settings.fonts.overrides;
+            
+
+            if(!settings.fonts.overrides.tldraw_draw) {
+                settings.fonts.overrides.tldraw_draw = draw;
+            }
+
+            if(!settings.fonts.overrides.tldraw_mono) {
+                settings.fonts.overrides.tldraw_mono = monospace;
+            }
+            
+            if(!settings.fonts.overrides.tldraw_sans) {
+                settings.fonts.overrides.tldraw_sans = sansSerif;
+            }
+
+            if(!settings.fonts.overrides.tldraw_serif) {
+                settings.fonts.overrides.tldraw_serif = serif;
+            }
+
+            delete settings.fonts.overrides?.draw;
+            delete settings.fonts.overrides?.monospace;
+            delete settings.fonts.overrides?.sansSerif;
+            delete settings.fonts.overrides?.serif;
+        }
+
+        this.#plugin.settings = settings;
 
         this.#notifyStoreSubscribers();
     }
