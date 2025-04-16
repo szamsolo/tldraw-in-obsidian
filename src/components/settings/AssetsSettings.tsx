@@ -165,11 +165,12 @@ function FontOverrideSetting({
         downloadFont(font, fontConfig)
     ), [font, fontConfig, downloadFont]);
 
+    const href = `https://github.com/tldraw/tldraw/blob/v${TLDRAW_VERSION}/assets/fonts/${defaultFonts[font]}`;
     return (
         <>
             <Setting
                 slots={{
-                    name: font,
+                    name: <a href={href} title={href}>{font}</a>,
                     control: (
                         <>
                             <Setting.Text
@@ -429,7 +430,7 @@ const MemoIconAssetsSettingsGroup = memo(({
         </Setting.Container>
         <h2>Individual icon overrides</h2>
         <p>
-            Click an icon name to view the default in your web browser. All of the default icons are available to browse on <a href="https://github.com/tldraw/tldraw/tree/v${TLDRAW_VERSION}/assets/icons/icon">
+            Click an icon name to view the default in your web browser. All of the default icons are available to browse on <a href={`https://github.com/tldraw/tldraw/tree/v${TLDRAW_VERSION}/assets/icons/icon`}>
                 {'tldraw\'s GitHub repository'}
             </a>.
         </p>
