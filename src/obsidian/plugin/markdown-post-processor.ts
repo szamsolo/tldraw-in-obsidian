@@ -22,7 +22,7 @@ export async function markdownPostProcessor(plugin: TldrawPlugin, element: HTMLE
 
     if (!(file instanceof TFile)) return;
 
-    if (!context.frontmatter || context.frontmatter['tldraw-file'] !== true) {
+    if (!plugin.hasTldrawFrontMatterKey(file)) {
         return;
     }
 

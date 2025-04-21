@@ -21,6 +21,10 @@ export default class UserSettingsManager {
     get settings() { return this.#plugin.settings; }
     get store() { return Object.assign({}, this.#store); }
     get plugin() { return this.#plugin }
+    get markdownFileTags() {
+        if (this.settings.file?.insertTags === false) return [];
+        return this.settings.file?.customTags ?? ['tldraw'];
+    }
 
     #notifyStoreSubscribers() {
         this.#subscribers.forEach((e) => e());
@@ -31,16 +35,23 @@ export default class UserSettingsManager {
         const {
             embeds: embedsDefault,
             fileDestinations: fileDestinationsDefault,
+            file: fileDefault,
             ...restDefault
         } = DEFAULT_SETTINGS;
         const {
             embeds,
             fileDestinations,
             tldrawOptions,
+            file,
             ...rest
         } = await this.#plugin.loadData() as Partial<TldrawPluginSettings> || {};
 
-        const embedsMerged = Object.assign({}, embedsDefault, embeds)
+        const embedsMerged = Object.assign({}, embedsDefault, embeds);
+
+        const fileMerged = Object.assign(
+            {}, fileDefault, file
+        );
+
         const fileDestinationsMerged = Object.assign({}, fileDestinationsDefault,
             (() => {
                 // Do not migrate if the the old file destination settings were already migrated.
@@ -71,30 +82,31 @@ export default class UserSettingsManager {
             embeds: embedsMerged,
             fileDestinations: fileDestinationsMerged,
             tldrawOptions,
+            file: fileMerged,
             ...restMerged
         };
 
-        if(settings.fonts?.overrides){
+        if (settings.fonts?.overrides) {
             /**
              * Migrate the old font overrides to the new format.
              */
 
             const { draw, monospace, sansSerif, serif } = settings.fonts.overrides;
-            
 
-            if(!settings.fonts.overrides.tldraw_draw) {
+
+            if (!settings.fonts.overrides.tldraw_draw) {
                 settings.fonts.overrides.tldraw_draw = draw;
             }
 
-            if(!settings.fonts.overrides.tldraw_mono) {
+            if (!settings.fonts.overrides.tldraw_mono) {
                 settings.fonts.overrides.tldraw_mono = monospace;
             }
-            
-            if(!settings.fonts.overrides.tldraw_sans) {
+
+            if (!settings.fonts.overrides.tldraw_sans) {
                 settings.fonts.overrides.tldraw_sans = sansSerif;
             }
 
-            if(!settings.fonts.overrides.tldraw_serif) {
+            if (!settings.fonts.overrides.tldraw_serif) {
                 settings.fonts.overrides.tldraw_serif = serif;
             }
 

@@ -9,6 +9,7 @@ import { createRoot, Root } from "react-dom/client";
 import { createElement } from "react";
 import TldrawSettingsTabView from "src/components/settings/TldrawSettingsTabView";
 import { destinationMethods, themePreferenceRecord } from "./settings/constants";
+import { VIEW_TYPE_TLDRAW, VIEW_TYPE_TLDRAW_FILE, ViewType } from "src/utils/constants";
 
 export type ThemePreference = keyof typeof themePreferenceRecord;
 
@@ -80,6 +81,11 @@ type RemoveReadonly<T> = { -readonly [P in keyof T]: T[P] };
  */
 export type UserTLCameraOptions = Pick<Partial<TLCameraOptions>, 'panSpeed' | 'zoomSpeed' | 'zoomSteps' | 'wheelBehavior'>;
 
+/**
+ * tldraw views, but for the `.md` extension
+ */
+type MarkdownViewType = Exclude<ViewType, typeof VIEW_TYPE_TLDRAW_FILE>
+
 export interface TldrawPluginSettings extends DeprecatedFileDestinationSettings {
 	fileDestinations: FileDestinationsSettings;
 	saveFileDelay: number; // in seconds
@@ -124,6 +130,32 @@ export interface TldrawPluginSettings extends DeprecatedFileDestinationSettings 
 	clipboard?: {
 		pasteAtCursor?: boolean,
 	}
+	workspace: {
+		/**
+		 * Tldraw markdown files (with the `.md` extension) will open as this type when clicked on.
+		 */
+		tldrMarkdownViewType: MarkdownViewType,
+		/**
+		 * Enable switching to `tldrMarkdownViewType` when opening a tldraw markdown file.
+		 */
+		switchMarkdownView: boolean,
+	}
+	file?: {
+		/**
+		 * The alternative frontmatter key used to detect if the markdown file is a tldraw document.
+		 * 
+		 * {@linkcode FRONTMATTER_KEY} will always be detected as a tldraw document even with this defined.
+		 */
+		altFrontmatterKey?: string,
+		/**
+		 * Insert tags in the frontmatter when creating a new document.
+		 */
+		insertTags?: boolean,
+		/**
+		 * Insert these tags in the frontmatter when creating a new document.
+		 */
+		customTags?: string[],
+	}
 }
 
 export const DEFAULT_SETTINGS = {
@@ -148,6 +180,13 @@ export const DEFAULT_SETTINGS = {
 		showBg: true,
 		showBgDots: true,
 	},
+	workspace: {
+		tldrMarkdownViewType: VIEW_TYPE_TLDRAW,
+		switchMarkdownView: true,
+	},
+	file: {
+		insertTags: true,
+	}
 } as const satisfies Partial<TldrawPluginSettings>;
 
 export class TldrawSettingsTab extends PluginSettingTab {
