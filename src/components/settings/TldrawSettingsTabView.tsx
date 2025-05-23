@@ -6,11 +6,16 @@ import StartUpSettings from "./StartUpSettings";
 import TldrawEditorOptions from "./TldrawEditorOptions";
 import EmbedsSettings from "./EmbedsSettings";
 import AssetsSettings from "./AssetsSettings";
+import WorkspaceSettings from "./WorkspaceSettings";
 
 const TABS = {
     'file': {
         label: 'File',
         Component: FileSettings,
+    },
+    'workspace': {
+        label: 'Workspace',
+        Component: WorkspaceSettings,
     },
     'start-up': {
         label: 'Start up',

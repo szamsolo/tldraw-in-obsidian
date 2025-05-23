@@ -375,3 +375,9 @@ div[data-type="tldraw-read-only"] .view-content.tldraw-view-content {
 	background-color: var(--interactive-accent);
 	color: var(--text-on-accent);
 }
+
+.ptl-settings-frontmatter-taglist {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--size-4-2);
+}

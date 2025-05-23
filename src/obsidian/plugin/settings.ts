@@ -1,6 +1,6 @@
 import { IconNames } from "src/types/tldraw";
 import { TldrawPluginSettings } from "../TldrawSettingsTab";
-import { iconTypes } from "../settings/constants";
+import { defaultFonts, iconTypes } from "../settings/constants";
 
 type FontOverridesSettings = NonNullable<TldrawPluginSettings['fonts']>['overrides'];
 type IconOverridesSettings = NonNullable<TldrawPluginSettings['icons']>['overrides'];
@@ -13,24 +13,14 @@ export function processFontOverrides(
     getResourcePath: (font: string) => string
 ): FontOverridesSettings {
     if (overrides === undefined) return undefined;
-    const { draw, monospace, sansSerif, serif } = overrides;
 
     const processed: NonNullable<FontOverridesSettings> = {};
 
-    if (draw !== undefined) {
-        processed.tldraw_draw = getResourcePath(draw);
-    }
-
-    if (monospace !== undefined) {
-        processed.tldraw_mono = getResourcePath(monospace);
-    }
-
-    if (sansSerif !== undefined) {
-        processed.tldraw_sans = getResourcePath(sansSerif);
-    }
-
-    if (serif !== undefined) {
-        processed.tldraw_serif = getResourcePath(serif);
+    for (const key of Object.keys(overrides)) {
+        const override = overrides[key];
+        if(override) {
+            processed[key] = getResourcePath(override);
+        }
     }
 
     return processed;
@@ -99,6 +89,11 @@ export function updateFontOverrides(
     addIfDefined(object,
         'monospace', getOverrideOrUndefinedForDefault('monospace', original, updates),
     )
+
+    for (const key of Object.keys(defaultFonts)) {
+        addIfDefined(object, key, getOverrideOrUndefinedForDefault(key, original, updates));
+    }
+
     return object;
 }
 

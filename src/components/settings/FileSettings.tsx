@@ -1,14 +1,17 @@
-import React, { memo, useCallback, useState } from "react";
+import React, { ComponentPropsWithoutRef, memo, useCallback, useEffect, useMemo, useState } from "react";
 import useUserPluginSettings from "src/hooks/useUserPluginSettings";
 import Setting from "./Setting";
 import { validateFolderPath } from "src/obsidian/helpers/app";
-import { TFolder } from "obsidian";
+import { IconName, setIcon, TFolder } from "obsidian";
 import { DEFAULT_SETTINGS, DestinationMethod } from "src/obsidian/TldrawSettingsTab";
-import { DEFAULT_SAVE_DELAY, MIN_SAVE_DELAY, MAX_SAVE_DELAY } from "src/utils/constants";
+import { DEFAULT_SAVE_DELAY, MIN_SAVE_DELAY, MAX_SAVE_DELAY, FRONTMATTER_KEY } from "src/utils/constants";
 import { clamp, msToSeconds } from "src/utils/utils";
 import UserSettingsManager from "src/obsidian/settings/UserSettingsManager";
 import useSettingsManager from "src/hooks/useSettingsManager";
 import { destinationMethods, destinationMethodsRecord } from "src/obsidian/settings/constants";
+import { isValidFrontmatterTag } from "src/obsidian/helpers/front-matter";
+
+const DEFAULT_TAGS = ['tldraw']
 
 function FileSettingsGroup() {
     const settingsManager = useSettingsManager();
@@ -271,11 +274,230 @@ function NewFileTimeFormat({
     )
 }
 
+function FrontmatterSettingsGroup() {
+    const settingsManager = useSettingsManager();
+    const settings = useUserPluginSettings(settingsManager);
+
+    const updateFrontmatterKey = useCallback(async (key?: string) => {
+        if (!key) {
+            delete settingsManager.settings.file?.altFrontmatterKey;
+        } else {
+            if (!settingsManager.settings.file) {
+                settingsManager.settings.file = {};
+            }
+            settingsManager.settings.file.altFrontmatterKey = key;
+        }
+        await settingsManager.updateSettings(settingsManager.settings);
+    }, [settingsManager]);
+
+    const resetFrontmatterKey = useCallback(() => (
+        updateFrontmatterKey(undefined)
+    ), [updateFrontmatterKey]);
+
+    const onInsertTags = useCallback(async (insertTags: boolean) => {
+        if (!settingsManager.settings.file) {
+            settingsManager.settings.file = {};
+        }
+        settingsManager.settings.file.insertTags = insertTags;
+        await settingsManager.updateSettings(settingsManager.settings);
+    }, [settingsManager])
+
+    const updateFrontmatterTags = useCallback(async (tags?: string[]) => {
+        if (tags === undefined) {
+            delete settingsManager.settings.file?.customTags;
+        } else {
+            if (!settingsManager.settings.file) {
+                settingsManager.settings.file = {};
+            }
+            settingsManager.settings.file.customTags = [...new Set(tags)];
+        }
+        await settingsManager.updateSettings(settingsManager.settings);
+    }, [settingsManager]);
+
+    const resetFrontmatterTags = useCallback(() => (
+        updateFrontmatterTags(undefined)
+    ), [updateFrontmatterTags]);
+
+    const [frontmatterTagValue, setFrontmatterTagValue] = useState('');
+
+    const isInvalidFrontmatterTag = useMemo(
+        () => !isValidFrontmatterTag(frontmatterTagValue),
+        [frontmatterTagValue]
+    );
+
+    const addFrontmatterTag = useCallback(() => {
+        const tags = settings.file?.customTags ?? [...DEFAULT_TAGS];
+        if (!isValidFrontmatterTag(frontmatterTagValue)) return;
+        tags.push(frontmatterTagValue)
+        updateFrontmatterTags(tags);
+        setFrontmatterTagValue('');
+    }, [updateFrontmatterTags, settings, frontmatterTagValue]);
+
+    const defaultTagsRemove = useCallback(async (tag: string) => {
+        const tags = DEFAULT_TAGS.filter((e) => e !== tag);
+        await updateFrontmatterTags(tags);
+    }, [updateFrontmatterTags]);
+
+    const makeFrontmatterTag = useCallback((tag: string) => {
+        const tags = settings.file?.customTags;
+        return (
+            <div key={tag} className="ptl-settings-frontmatter-tag multi-select-pill">
+                <div className="multi-select-pill-content">
+                    <span>{tag}</span>
+                </div>
+                <IconButton
+                    className="multi-select-pill-remove-button"
+                    iconId={'x'}
+                    onClick={tags === undefined
+                        ? () => defaultTagsRemove(tag)
+                        : () => updateFrontmatterTags(tags.filter((e) => e !== tag))}
+                />
+            </div>
+        );
+    }, [defaultTagsRemove, settings]);
+
+    return (
+        <>
+            <Setting
+                slots={{
+                    name: 'Frontmatter',
+                }}
+                heading={true}
+            />
+            <Setting
+                slots={{
+                    name: 'Alternative frontmatter key',
+                    desc: (
+                        <>
+                            An alternative key to use to determine if a markdown file is a tldraw document.
+                            This key will be added to every new tldraw markdown file.
+                            <code className="ptl-default-code">
+                                {`DEFAULT: ${FRONTMATTER_KEY}`}
+                            </code>
+                        </>
+                    ),
+                    control: (
+                        <>
+                            <Setting.Text
+                                value={settings.file?.altFrontmatterKey}
+                                placeholder={FRONTMATTER_KEY}
+                                onChange={updateFrontmatterKey}
+                            />
+                            <Setting.ExtraButton
+                                icon={'reset'}
+                                onClick={resetFrontmatterKey}
+                            />
+                        </>
+                    )
+                }}
+            />
+            <Setting
+                slots={{
+                    name: 'Insert tags',
+                    desc: (
+                        <>
+                            Insert tags into new tldraw markdown documents.
+                            <code className="ptl-default-code">
+                                DEFAULT: {DEFAULT_SETTINGS.workspace.switchMarkdownView ? 'On' : 'Off'}
+                            </code>
+                        </>
+                    ),
+                    control: (
+                        <>
+                            <Setting.Toggle
+                                value={settings.file?.insertTags ?? DEFAULT_SETTINGS.file.insertTags}
+                                onChange={onInsertTags}
+                            />
+                        </>
+                    )
+                }}
+            />
+            <Setting
+                slots={{
+                    name: 'Tags',
+                    desc: (
+                        <>
+                            <p>
+                                The tags to insert in new tldraw markdown documents.
+                                See <a href="https://help.obsidian.md/tags#Tag+format">Tags documentation</a> for what is considered a valid tag.
+                                <code className="ptl-default-code">
+                                    {`DEFAULT: ${DEFAULT_TAGS.join(', ')}`}
+                                </code>
+                            </p>
+                            <div className="ptl-settings-frontmatter-taglist">
+                                {
+                                    settings.file?.customTags?.map(makeFrontmatterTag) ?? (
+                                        <>
+                                            {DEFAULT_TAGS.map(makeFrontmatterTag)}
+                                        </>
+                                    )
+                                }
+                            </div>
+                        </>
+                    ),
+                    control: (
+                        <>
+                            <IconButton className="clickable-icon extra-setting-button"
+                                iconId="rotate-ccw"
+                                aria-label="Reset to default"
+                                onClick={resetFrontmatterTags}
+                            />
+                        </>
+                    )
+                }}
+            />
+            <Setting.Container>
+                <Setting
+                    slots={{
+                        name: 'New tag',
+                        desc: (
+                            <>
+                                {
+                                    !frontmatterTagValue.length || !isInvalidFrontmatterTag ? undefined : (
+                                        <>
+                                            <p style={{ color: 'red' }}>Invalid frontmatter tag</p>
+                                        </>
+                                    )
+                                }
+                            </>
+                        ),
+                        control: (
+                            <>
+                                <Setting.Text
+                                    value={frontmatterTagValue}
+                                    placeholder={'custom-tag'}
+                                    onChange={setFrontmatterTagValue}
+                                />
+                                <Setting.ExtraButton
+                                    icon={'plus-circle'}
+                                    onClick={addFrontmatterTag}
+                                />
+                            </>
+                        ),
+                    }}
+                />
+            </Setting.Container>
+        </>
+    )
+}
+
+function IconButton({ iconId, ...rest }: Omit<ComponentPropsWithoutRef<'div'>, 'children'> & {
+    iconId: IconName,
+}) {
+    const [ref, setRef] = useState<HTMLDivElement | null>();
+    useEffect(() => {
+        if (!ref) return;
+        setIcon(ref, iconId);
+    });
+    return <div ref={setRef} {...rest} />;
+}
+
 export default function FileSettings() {
     return (
         <>
             <Setting.Container>
                 <FileSettingsGroup />
+                <FrontmatterSettingsGroup />
             </Setting.Container>
         </>
     );

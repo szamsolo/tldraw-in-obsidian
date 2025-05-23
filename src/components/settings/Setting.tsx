@@ -1,5 +1,5 @@
 import { ButtonComponent, DropdownComponent, ExtraButtonComponent, MomentFormatComponent, Setting as ObsidianSetting, TextComponent, ToggleComponent } from "obsidian";
-import React, { ContextType, ReactNode, useContext, useEffect, useLayoutEffect, useMemo, useState } from "react";
+import React, { ComponentPropsWithoutRef, ContextType, ReactNode, useContext, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { SettingContainerContext, SettingContext, SettingSlotContext } from "src/contexts/setting-context";
 
@@ -8,6 +8,7 @@ export default function Setting({
     containerEl,
     className = '',
     disabled = false,
+    heading = false,
     slots: {
         info: infoSlot,
         name: nameSlot,
@@ -23,6 +24,7 @@ export default function Setting({
      */
     containerEl?: HTMLElement,
     disabled?: Parameters<ObsidianSetting['setDisabled']>[0],
+    heading?: boolean,
     slots?: {
         control?: ReactNode,
         info?: ReactNode,
@@ -39,8 +41,12 @@ export default function Setting({
         const el = containerEl ?? settingContainerEl ?? (
             () => { throw new Error(`Expected the "${Setting.name}" component to be provided a container element.`) }
         )();
-        return new ObsidianSetting(el);
-    }, [containerEl, settingContainerEl]);
+        const setting = new ObsidianSetting(el);
+        if (heading) {
+            setting.setHeading();
+        }
+        return setting;
+    }, [containerEl, heading, settingContainerEl]);
 
     useEffect(() => {
         const args = typeof tooltip === 'string'
@@ -150,11 +156,12 @@ Setting.Button = function Button({
 }
 
 Setting.Dropdown = function Dropdown({
-    children, options, onChange, value,
+    children, options, onChange, value, ...rest
 }: {
     children?: ReactNode,
+    disabled?: boolean,
     options?: Parameters<DropdownComponent['addOptions']>[0],
-    onChange?: Parameters<DropdownComponent['onChange']>[0]
+    onChange?: Parameters<DropdownComponent['onChange']>[0],
     value?: string,
 }) {
     const settingSlot = useContext(SettingSlotContext);
@@ -178,6 +185,16 @@ Setting.Dropdown = function Dropdown({
         if (onChange) dropdown.onChange(onChange);
         if (value !== undefined) dropdown.setValue(value);
     }, [dropdown, onChange, value]);
+
+    const disabled = useMemo(() => rest.disabled, [rest]);
+
+    useEffect(() => {
+        if ('disabled' in rest) {
+            dropdown?.setDisabled(rest.disabled === undefined || rest.disabled);
+        } else {
+            dropdown?.setDisabled(false);
+        }
+    }, [dropdown, disabled]);
 
     return !dropdown ? undefined : (
         <>
@@ -235,12 +252,13 @@ Setting.ExtraButton = function ExtraButton({
 
 Setting.Container = function Container({
     children,
+    ...otherContainerProps
 }: {
     children: ReactNode | ((containerEl: HTMLElement) => ReactNode),
-}) {
+} & Omit<ComponentPropsWithoutRef<'div'>, 'children'>) {
     const [contentEl, setContentEl] = useState<HTMLElement | null>(null);
     return (
-        <div ref={setContentEl}>
+        <div ref={setContentEl} {...otherContainerProps}>
             {!contentEl ? undefined : (
                 <SettingContainerContext.Provider value={contentEl}>
                     {
@@ -326,7 +344,7 @@ Setting.Text = function Text({
     useEffect(() => {
         if (!text) return;
         if (onChange) text.onChange(onChange);
-        if (value !== undefined) text.setValue(value);
+        text.setValue(value ?? '');
         if (placeholder !== undefined) text.setPlaceholder(placeholder);
         text.inputEl.readOnly = !!readonly;
     }, [text, onChange, value, placeholder, readonly]);

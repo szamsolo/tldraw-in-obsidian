@@ -169,27 +169,19 @@ export default class TldrawPlugin extends Plugin {
 						const viewType = state.type;
 						const validViewType = isValidViewType(viewType);
 
-						if (validViewType && filePath) {
+						if (self.settings.workspace.switchMarkdownView && validViewType && filePath) {
 							const matr = !!rstate.manuallyTriggered;
-							const cache =
-								self.app.metadataCache.getCache(filePath);
 
-							if (
-								cache?.frontmatter &&
-								cache.frontmatter[FRONTMATTER_KEY]
-							) {
-								const view = matr ? viewType : VIEW_TYPE_TLDRAW;
+							const file = self.app.vault.getAbstractFileByPath(
+								filePath
+							);
+
+							if (file instanceof TFile && self.hasTldrawFrontMatterKey(file)) {
+								const view = matr ? viewType : self.settings.workspace.tldrMarkdownViewType;
 								const newState = { ...state, type: view };
 
-								const file =
-									self.app.vault.getAbstractFileByPath(
-										filePath
-									);
-
-								if (file instanceof TFile) {
-									self.setLeafFileViewMode(view, leaf, file);
-									self.updateStatusBarViewMode(view);
-								}
+								self.setLeafFileViewMode(view, leaf, file);
+								self.updateStatusBarViewMode(view);
 
 								return next.apply(this, [newState, ...rest]);
 							}
@@ -449,7 +441,10 @@ export default class TldrawPlugin extends Plugin {
 			() => {
 				// constructs the markdown content thats a template:
 				const tlData = getTLDataTemplate(this.manifest.version, tldrawFile, window.crypto.randomUUID());
-				const frontmatter = frontmatterTemplate(`${FRONTMATTER_KEY}: true`);
+				const frontmatter = frontmatterTemplate(
+					`${this.settings.file?.altFrontmatterKey ?? FRONTMATTER_KEY}: true`,
+					this.settingsManager.markdownFileTags,
+				);
 				const codeblock = codeBlockTemplate(tlData);
 				return tlFileTemplate(frontmatter, codeblock);
 			}
@@ -522,9 +517,16 @@ export default class TldrawPlugin extends Plugin {
 		return this.hasTldrawFrontMatterKey(file);
 	}
 
-	private hasTldrawFrontMatterKey(file: TFile) {
+	public hasTldrawFrontMatterKey(file: TFile) {
 		const fcache = file ? this.app.metadataCache.getFileCache(file) : null;
-		return !!fcache?.frontmatter && !!fcache.frontmatter[FRONTMATTER_KEY];
+		const frontmatter = fcache?.frontmatter;
+		if (!frontmatter) return false;
+
+		const altFrontmatterKey = this.settings.file?.altFrontmatterKey;
+
+		return Object.hasOwn(frontmatter, FRONTMATTER_KEY) || (
+			!!altFrontmatterKey && Object.hasOwn(frontmatter, altFrontmatterKey)
+		);
 	}
 
 	private switchToTldrawViewAfterLoad() {

@@ -7,7 +7,7 @@ import IconsSettingsManager from "src/obsidian/settings/IconsSettingsManager";
 import FontsSettingsManager from "src/obsidian/settings/FontsSettingsManager";
 import { FontTypes, IconNames } from "src/types/tldraw";
 import { DownloadInfo } from "src/utils/fetch/download";
-import { defaultFonts, fontExtensions, iconExtensions, iconTypes } from "src/obsidian/settings/constants";
+import { defaultFonts, fontExtensions, FontGroupMatcher, iconExtensions, iconTypes } from "src/obsidian/settings/constants";
 import { FileSearchModal } from "src/obsidian/modal/FileSearchModal";
 import { Notice, TFile, TFolder } from "obsidian";
 import { TLDRAW_VERSION } from "src/utils/constants";
@@ -120,19 +120,11 @@ const MemoAssetsSettingsGroup = memo(({ downloadAll }: Pick<ComponentProps<typeo
 function FontOverrideSetting({
     downloadFont,
     manager,
-    setting: {
-        font,
-        name,
-        appearsAs,
-    }
+    font,
 }: {
     downloadFont: (font: FontTypes, config: DownloadInfo) => void,
     manager: FontsSettingsManager,
-    setting: {
-        name: string,
-        font: keyof typeof defaultFonts,
-        appearsAs: string,
-    }
+    font: FontTypes,
 }) {
     const store = useMemo(() => (
         {
@@ -173,12 +165,12 @@ function FontOverrideSetting({
         downloadFont(font, fontConfig)
     ), [font, fontConfig, downloadFont]);
 
+    const href = `https://github.com/tldraw/tldraw/blob/v${TLDRAW_VERSION}/assets/fonts/${defaultFonts[font]}`;
     return (
         <>
             <Setting
                 slots={{
-                    name,
-                    desc: `Appears as "${appearsAs}" in the style panel.`,
+                    name: <a href={href} title={href}>{font}</a>,
                     control: (
                         <>
                             <Setting.Text
@@ -212,25 +204,29 @@ function FontOverrideSetting({
 const fontOverrideSettingProps = [
     {
         name: 'Draw (handwriting) font',
-        font: 'draw',
+        group: '_draw',
         appearsAs: 'draw',
     },
     {
         name: 'Sans-serif font',
-        font: 'sansSerif',
+        group: '_sans',
         appearsAs: 'sans',
     },
     {
         name: 'Serif font',
-        font: 'serif',
+        group: '_serif',
         appearsAs: 'serif',
     },
     {
         name: 'Monospace font',
-        font: 'monospace',
+        group: '_mono',
         appearsAs: 'mono',
     }
-] satisfies ComponentProps<typeof FontOverrideSetting>['setting'][]
+] satisfies {
+    name: string,
+    group: FontGroupMatcher,
+    appearsAs: string,
+}[]
 
 const MemoFontAssetsSettingsGroup = memo(({
     downloadAll,
@@ -246,9 +242,24 @@ const MemoFontAssetsSettingsGroup = memo(({
             <FontAssetsSettingsGroup downloadAll={downloadAll} />
         </Setting.Container>
         <h2>Font assets overrides</h2>
-        <Setting.Container>
-            {fontOverrideSettingProps.map((props) => <FontOverrideSetting key={props.font} downloadFont={downloadFont} manager={manager} setting={props} />)}
-        </Setting.Container>
+        {fontOverrideSettingProps.map((props) => (
+            <Setting.Container className="ptl-settings-font-group" key={props.group}>
+                <Setting
+                    slots={{
+                        name: <h3>{props.name}</h3>,
+                        desc: `Appears as "${props.appearsAs}" in the style panel.`,
+                    }}
+                >
+                    {
+                        Object.keys(defaultFonts).filter((key) => key.includes(props.group)).map((key) => (
+                            <FontOverrideSetting key={key} downloadFont={downloadFont} manager={manager}
+                                font={key as keyof typeof defaultFonts}
+                            />
+                        ))
+                    }
+                </Setting>
+            </Setting.Container>
+        ))}
     </>
 ));
 
@@ -419,7 +430,7 @@ const MemoIconAssetsSettingsGroup = memo(({
         </Setting.Container>
         <h2>Individual icon overrides</h2>
         <p>
-            Click an icon name to view the default in your web browser. All of the default icons are available to browse on <a href="https://github.com/tldraw/tldraw/tree/v${TLDRAW_VERSION}/assets/icons/icon">
+            Click an icon name to view the default in your web browser. All of the default icons are available to browse on <a href={`https://github.com/tldraw/tldraw/tree/v${TLDRAW_VERSION}/assets/icons/icon`}>
                 {'tldraw\'s GitHub repository'}
             </a>.
         </p>

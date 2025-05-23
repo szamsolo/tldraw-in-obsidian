@@ -8,6 +8,7 @@ import { tldrawFileToJson } from "./tldraw-file/tldraw-file-to-json";
 import { PluginManifest } from "obsidian";
 import { createRawTldrawFile } from "./tldraw-file";
 import { replaceBetweenKeywords } from "./utils";
+import { isValidFrontmatterTag } from "src/obsidian/helpers/front-matter";
 
 export type TldrawPluginMetaData = {
 	"plugin-version": string;
@@ -68,12 +69,24 @@ export const getTLDataTemplate = (
 	raw: tldrawFileToJson(tldrawFile),
 });
 
-export const frontmatterTemplate = (data: string) => {
+export const frontmatterTemplate = (data: string, tags: string[]) => {
+	const validTags = tags.filter((e) => {
+		if (isValidFrontmatterTag(e)) {
+			return true;
+		}
+		console.warn(
+			`Tag ${e} is not a valid frontmatter tag. Not adding to frontmatter.` +
+			`\tSee https://help.obsidian.md/tags#Tag+format for more information.`
+		);
+		return false;
+	})
 	let str = "";
 	str += "---\n";
 	str += "\n";
 	str += `${data}\n`;
-	str += "tags: [tldraw]\n";
+	if(validTags.length) {
+		str += `tags:\n[${validTags.join(', ')}]\n`;
+	}
 	str += "\n";
 	str += "---\n";
 	return str;
