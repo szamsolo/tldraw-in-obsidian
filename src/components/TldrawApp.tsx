@@ -26,6 +26,7 @@ import { TLDataDocumentStore } from "src/utils/document";
 import PluginKeyboardShortcutsDialog from "./PluginKeyboardShortcutsDialog";
 import PluginQuickActions from "./PluginQuickActions";
 import { lockZoomIcon } from "src/assets/data-icons";
+import { isObsidianThemeDark } from "src/utils/utils";
 
 type TldrawAppOptions = {
 	iconAssetUrls?: TLUiAssetUrlOverrides['icons'],
@@ -217,6 +218,19 @@ const TldrawApp = ({ plugin, store,
 		}
 	});
 
+	/**
+	 * "Flashbang" workaround
+	 * 
+	 * The editor shows a loading screen which doesn't reflect the user's preference until the editor is loaded.
+	 * This works around it by checking the user's preference ahead of time and passing the dark theme className.
+	 */
+	const fbWorkAroundClassname = React.useMemo(() => {
+		const themeMode = plugin.settings.themeMode;
+		if (themeMode === "dark") return 'tl-theme__dark';
+		else if (themeMode === "light") return;
+		else return !isObsidianThemeDark() ? undefined : 'tl-theme__dark';
+	}, [plugin]);
+
 	return (
 		<div
 			className="tldraw-view-root"
@@ -242,6 +256,7 @@ const TldrawApp = ({ plugin, store,
 				autoFocus={false}
 				onMount={setAppState}
 				tools={tools}
+				className={fbWorkAroundClassname}
 			/>
 		</div>
 	);

@@ -72,18 +72,15 @@ div[data-type="tldraw-view"] .view-content.tldraw-view-content,
 div[data-type="tldraw-read-only"] .view-content.tldraw-view-content {
 	/* gets rid of the padding so the canvas can bleed against the edges */
 	padding: 0;
-	/* creates a space at the bottom so that the status bar isn't covering the canvas */
-	padding-bottom: var(--size-4-8);
+	@container style(--status-bar-position: fixed) {
+		/* creates a space at the bottom so that the status bar isn't covering the canvas */
+		padding-bottom: calc(var(--size-4-1) * 2 + var(--status-bar-font-size) + 8px);
+	}
 }
 
 .is-mobile div[data-type="tldraw-view"] .view-content.tldraw-view-content {
-	/* if there is just .is-mobile (without .is-phone) the mobile-navbar isn't present so we can take up more space  */
+	/* There is a bit of padding that shows up on mobile which we can remove. */
 	padding-bottom: 0;
-}
-
-.is-phone div[data-type="tldraw-view"] .view-content.tldraw-view-content {
-	/* creates a space at the bottom so that the .is-phone mobile-navbar isn't covering the canvas  */
-	padding-bottom: var(--size-4-12);
 }
 
 .ptl-statusbar-viewmode-box {

@@ -196,7 +196,7 @@ export default class TldrawPlugin extends Plugin {
 		this.registerEvent(
 			this.app.workspace.on("editor-menu", (menu, editor, source) => {
 				const file = source.file;
-				const leaf = this.app.workspace.getLeaf(false);
+				const leaf = this.app.workspace.getActiveViewOfType(MarkdownView)?.leaf;
 
 				if (!leaf || !(file instanceof TFile)) return;
 				if (!this.isTldrawFile(file)) return;
