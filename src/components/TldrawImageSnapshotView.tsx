@@ -149,12 +149,11 @@ type SnapshotImagePlaceHolderSyncStore = {
     syncPlaceHolder(cb: () => void): (() => void),
 }
 
-export type SnapshotPreviewSyncStore = (
-    SnapshotSyncStore
-    & SnapshotImagePreviewSizeSyncStore
-    & SnapshotImagePreviewOptionsSyncStore
-    & SnapshotImagePlaceHolderSyncStore
-);
+export interface SnapshotPreviewSyncStore extends
+    SnapshotSyncStore,
+    SnapshotImagePreviewSizeSyncStore,
+    SnapshotImagePreviewOptionsSyncStore,
+    SnapshotImagePlaceHolderSyncStore { }
 
 export function TldrawImageSnapshotView({
     previewStore,

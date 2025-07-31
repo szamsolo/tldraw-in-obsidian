@@ -1,31 +1,25 @@
 import { MarkdownRenderChild, Menu, TFile } from "obsidian";
-import { createRoot, Root } from "react-dom/client";
 import BoundsTool from "src/components/BoundsTool";
 import BoundsToolSelectedShapeIndicator from "src/components/BoundsToolSelectedShapesIndicator";
 import EmbedTldrawToolBar from "src/components/EmbedTldrawToolBar";
-import TldrawApp, { TldrawAppStoreProps } from "src/components/TldrawApp";
+import TldrawApp from "src/components/TldrawApp";
 import TldrawPlugin from "src/main";
 import BoundsSelectorTool from "src/tldraw/tools/bounds-selector-tool";
-import { ImageViewModeOptions, ViewMode } from "../helpers/TldrawAppEmbedViewController";
-import { BoxLike, Editor, pageIdValidator, Store, TLPageId } from "tldraw";
-import TLDataDocumentStoreManager from "../plugin/TLDataDocumentStoreManager";
-import { showEmbedContextMenu } from "../helpers/show-embed-context-menu";
-import { SnapshotPreviewSyncStore, TldrawImageSnapshot, TldrawImageSnapshotView } from "src/components/TldrawImageSnapshotView";
-import { ComponentProps, createElement } from "react";
-import { TldrAppControllerForMenu } from "../menu/create-embed-menu";
+import { ImageViewModeOptions, ViewMode } from "../../helpers/TldrawAppEmbedViewController";
+import { BoxLike, Editor, pageIdValidator, TLPageId } from "tldraw";
+import TLDataDocumentStoreManager from "../../plugin/TLDataDocumentStoreManager";
+import { showEmbedContextMenu } from "../../helpers/show-embed-context-menu";
+import { ComponentProps } from "react";
+import { TldrAppControllerForMenu } from "../../menu/create-embed-menu";
 import { isObsidianThemeDark } from "src/utils/utils";
-import { logClass, TLDRAW_COMPONENT_LOGGING } from "src/utils/logging";
+import { logClass } from "src/utils/logging";
+import TldrawViewComponent from "../tldraw-view-component";
+import PreviewImageImpl from "./preview-image";
+import SnapshotPreviewSyncStoreImpl from "./snapshot-preview-store";
 
 const boundsSelectorToolIconName = `tool-${BoundsSelectorTool.id}`;
 
 type DocumentStoreInstance = ReturnType<TLDataDocumentStoreManager['register']>;
-
-
-function getEditorStoreProps(storeProps: TldrawAppStoreProps) {
-    return storeProps.tldraw ? storeProps.tldraw : {
-        store: storeProps.plugin.store
-    }
-}
 
 function _pageId(page?: string) {
     return page === undefined || page.length === 0 ? undefined : (
@@ -35,110 +29,23 @@ function _pageId(page?: string) {
 
 type EmbedPageOptions = Pick<ImageViewModeOptions, 'bounds'>;
 
+type Timeout = number;
+
 export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
     #storeInstance?: DocumentStoreInstance;
     #currentMenu?: Menu;
     #viewContentEl?: HTMLElement;
     #viewMode: ViewMode = 'image';
-    #currentPage?: TLPageId;
+    #viewComponent?: TldrawViewComponent;
     #embedPagesOptions: Partial<Record<TLPageId, EmbedPageOptions>> = {};
-    #previewImage: {
-        /**
-         * The timeout that is used to update the preview.
-         */
-        refreshTimeout?: NodeJS.Timeout;
-        /**
-         * The number of milliseconds to use as the timeout delay for {@linkcode refreshTimeout}
-         */
-        refreshTimeoutDelay?: number;
-        /**
-         * Observes changes to the img src attribute.
-         */
-        observer?: MutationObserver;
-        options: ImageViewModeOptions;
-        placeHolderSizeInterval?: NodeJS.Timeout;
-        /**
-         * This is used so that the image does not have to re-render the snapshot everytime.
-         * 
-         * This should be set to undefined whenever the tldraw data changes.
-        */
-        rendered?: HTMLElement;
-        size: TldrawMarkdownRenderChild['context']['initialEmbedValues']['imageSize'];
-        snapshot?: TldrawImageSnapshot;
-        /**
-         * Call this to cancel the triggered snapshot callback when the workspace leaf is reshown.
-         */
-        cancelDeferredSnapshotCallback?: () => void,
-        sizeCallback?: () => void;
-        optionsCallback?: () => void;
-        snapshotCallback?: () => void;
-        placeHolderCallback?: () => void;
-    };
+    readonly #previewImage: PreviewImageImpl;
+
     /**
      * Used with the `useSyncExternalStore` hook
      */
-    #snapshotPreviewStore = {
-        getPlaceHolder: () => {
-            return this.#previewImage.rendered;
-        },
-        getPreviewSize: () => {
-            return this.#previewImage.size;
-        },
-        getPreviewOptions: () => {
-            return this.#previewImage.options;
-        },
-        /**
-         * Will only recompute the snapshot if {@linkcode this.#previewImage.snapshot} is `undefined`
-         * @returns A lazily computed snapshot.
-         */
-        getSnapshot: () => {
-            return this.#previewImage.snapshot ??= (() => {
-                const storeInstance = this.#storeInstance;
-                const storeProps = !storeInstance ? undefined : getEditorStoreProps({ plugin: storeInstance.documentStore });
-                return !storeProps ? undefined
-                    : !storeProps.store ? storeProps.snapshot : (
-                        storeProps.store instanceof Store
-                            ? storeProps.store.getStoreSnapshot()
-                            : storeProps.store.store?.getStoreSnapshot()
-                    );
-            })();
-        },
-        onPreviewSize: (cb) => {
-            this.#previewImage.sizeCallback = cb;
-            return () => {
-                if (this.#previewImage.sizeCallback === cb) {
-                    this.#previewImage.sizeCallback = undefined;
-                }
-            };
-        },
-        onPreviewOptions: (cb) => {
-            this.#previewImage.optionsCallback = cb;
-            return () => {
-                if (this.#previewImage.optionsCallback === cb) {
-                    this.#previewImage.optionsCallback = undefined;
-                }
-            };
-        },
-        onSnapshot: (cb) => {
-            this.#previewImage.snapshotCallback = cb;
-            return () => {
-                if (this.#previewImage.snapshotCallback === cb) {
-                    this.#previewImage.snapshotCallback = undefined;
-                }
-            };
-        },
-        syncPlaceHolder: (cb) => {
-            this.#previewImage.placeHolderCallback = cb;
-            return () => {
-                if (this.#previewImage.placeHolderCallback === cb) {
-                    this.#previewImage.placeHolderCallback = undefined;
-                }
-            };
-        },
-    } satisfies SnapshotPreviewSyncStore;
+    readonly #snapshotPreviewStore: SnapshotPreviewSyncStoreImpl;
 
-    plugin: TldrawPlugin;
-    root?: Root;
+    readonly plugin: TldrawPlugin;
 
     constructor(
         containerEl: HTMLElement,
@@ -172,12 +79,11 @@ export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
         this.plugin = plugin;
         const pageId = _pageId(context.initialEmbedValues.page);
         if (pageId) {
-            this.#currentPage = pageId;
             this.#embedPagesOptions = {
                 [pageId]: { bounds: context.initialEmbedValues.bounds }
             };
         }
-        this.#previewImage = {
+        this.#previewImage = new PreviewImageImpl({
             size: context.initialEmbedValues.imageSize,
             refreshTimeoutDelay: context.refreshTimeoutDelay,
             options: {
@@ -197,7 +103,17 @@ export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
                 })(),
                 targetDocument: containerEl.ownerDocument,
             },
-        };
+        }, {
+            getStoreInstance: () => this.#storeInstance,
+            isVisible: () => this.context.isWorkspaceLeafShown() && this._loaded,
+            deferUntilIsShown: (cb) => this.context.deferUntilIsShown(cb),
+        });
+
+        this.#snapshotPreviewStore = new SnapshotPreviewSyncStoreImpl(this.#previewImage);
+    }
+
+    get #currentPage() {
+        return this.#previewImage.options.pageId;
     }
 
     #updateHasShape() {
@@ -206,14 +122,8 @@ export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
         );
     }
 
-    #markSnapshotStale() {
-        this.#previewImage.rendered = undefined;
-        this.#previewImage.snapshot = undefined;
-        this.triggerSnapshotCallback();
-    }
-
     #dataUpdated() {
-        this.#markSnapshotStale();
+        this.#previewImage.markSnapshotStale();
         this.#updateHasShape();
     }
 
@@ -312,11 +222,11 @@ export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
      * 
      * We utilize these values in the CSS to maintain this placeholder size until the embed view is properly loaded.
      */
-    #setPlaceHolderSize() {
+    #setPlaceHolderSize(rect?: DOMRect) {
         const container = this.containerEl;
-        const viewContent = this.#viewContentEl;
-        if (!viewContent) return;
-        const { width, height } = viewContent.getBoundingClientRect();
+        const viewContentRect = rect ?? this.#viewContentEl?.getBoundingClientRect();
+        if (!viewContentRect) return;
+        const { width, height } = viewContentRect;
         if (!width || !height) return;
         container.style.setProperty('--ptl-placeholder-width', `${width}px`);
         container.style.setProperty('--ptl-placeholder-height', `${height}px`);
@@ -329,7 +239,7 @@ export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
                 getViewOptions: () => this.#previewImage.options,
                 getViewMode: () => this.#viewMode,
                 toggleBackground: () => {
-                    this.setPreviewImageOptions({
+                    this.#previewImage.refreshPreview({
                         ...this.#previewImage.options,
                         background: !this.#previewImage.options.background
                     });
@@ -364,60 +274,12 @@ export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
                 if (!preview) {
                     this.context.onUpdatedSize(size);
                 } else {
-                    this.#previewImage.size = size;
-                    this.#previewImage.sizeCallback?.();
+                    this.#previewImage.setSize(size);
                 }
             },
             plugin: this.plugin,
             showBgDots: this.plugin.settings.embeds.showBgDots,
         }).tldrawEmbedViewContent;
-    }
-
-    #observePreviewImage() {
-        if (!this.#viewContentEl) return;
-
-        this.#previewImage.observer?.disconnect();
-
-        const mutationObserver = new MutationObserver((m) => {
-            for (const mutation of m) {
-                if (mutation.target.instanceOf(HTMLElement)) {
-                    if (
-                        mutation.type === 'attributes'
-                        && mutation.target.instanceOf(HTMLImageElement)
-                        && mutation.target.hasAttribute('src')
-                        && mutation.target.parentElement !== null
-                        && mutation.target.parentElement.hasClass('tl-container')
-                    ) {
-                        this.#previewImage.rendered = mutation.target.parentElement;
-                    }
-                }
-            }
-        });
-
-        mutationObserver.observe(this.#viewContentEl, {
-            childList: true,
-            subtree: true,
-            attributeFilter: ['src'],
-        });
-
-        this.#previewImage.observer = mutationObserver;
-
-        // TODO: Replace this with something that does not poll the bounding rect
-        clearInterval(this.#previewImage.placeHolderSizeInterval);
-        this.#previewImage.placeHolderSizeInterval = setInterval(() => {
-            this.#setPlaceHolderSize();
-        }, 100);
-    }
-
-    #observePreviewImageDisconnect() {
-        clearInterval(this.#previewImage.placeHolderSizeInterval)
-        this.#previewImage.observer?.disconnect();
-        this.#previewImage.observer = undefined;
-    }
-
-    #setRoot(createRoot?: () => Root) {
-        this.root?.unmount();
-        this.root = createRoot?.();
     }
 
     setViewMode(mode: ViewMode) {
@@ -426,39 +288,6 @@ export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
         }
         this.#viewMode = mode;
         this.renderRoot();
-    }
-
-    /**
-     * The purpose of this method is to only notify "snapshot observers" that an image should be rendered when the
-     * workspace leaf is visible to the user.
-     * 
-     * - If a "deferred snapshot" was already triggered, then cancel it.
-     * - If the workspace leaf where the image preview is located is shown, then invoke the "snapshot callback"
-     * - , else: defer triggering the snapshot callback until the workspace leaf is shown.
-     */
-    triggerSnapshotCallback() {
-        this.#previewImage.cancelDeferredSnapshotCallback?.();
-        this.#previewImage.cancelDeferredSnapshotCallback = undefined;
-        if (this.context.isWorkspaceLeafShown()) {
-            this.#previewImage.snapshotCallback?.();
-        } else {
-            this.#previewImage.cancelDeferredSnapshotCallback = (
-                this.context.deferUntilIsShown(() => this.triggerSnapshotCallback())
-            );
-        }
-    }
-
-    refreshPreview(options?: ImageViewModeOptions) {
-        clearTimeout(this.#previewImage.refreshTimeout);
-        this.#previewImage.refreshTimeout = setTimeout(() => {
-            if (options) {
-                this.#previewImage.options = options;
-            }
-            this.#currentPage = this.#previewImage.options.pageId;
-            this.#previewImage.rendered = undefined;
-            this.#previewImage.placeHolderCallback?.();
-            this.#previewImage.optionsCallback?.();
-        }, this.#previewImage.refreshTimeoutDelay);
     }
 
     unloadStoreInstance() {
@@ -479,8 +308,7 @@ export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
     }) {
         const { options: currOptions } = this.#previewImage;
         if (imageSize.height !== this.#previewImage.size.height || imageSize.width !== this.#previewImage.size.width) {
-            this.#previewImage.size = imageSize;
-            this.#previewImage.sizeCallback?.();
+            this.#previewImage.setSize(imageSize);
         }
 
         const pageId = _pageId(page);
@@ -506,7 +334,7 @@ export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
             && currOptions.pageId === pageId
         ) return;
 
-        this.refreshPreview({
+        this.#previewImage.refreshPreview({
             ...currOptions,
             background: showBg,
             bounds,
@@ -515,32 +343,66 @@ export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
     }
 
     updateBounds(bounds?: BoxLike) {
-        this.setPreviewImageOptions({
+        this.#previewImage.setOptions({
             ...this.#previewImage.options,
             bounds,
         });
     }
 
     async awaitInitialLoad(ms: number) {
-        // TODO: Modify this to be a promise that is resolved when the image preview has finished loading
-        // instead of relying on a timeout
+        const controller = new AbortController();
+        return Promise.race([
+            this.#awaitInitialLoadViaTimeout(ms),
+            this.#viewContentEl
+                ? this.#awaitInitialImageLoad(this.#viewContentEl, controller.signal)
+                // Never resolve if the view content element is not set.
+                : new Promise<void>(() => { }),
+        ]).finally(() => {
+            controller.abort();
+        });
+    }
+
+    /**
+     * Observer-based approach to wait for the initial load to complete.
+     * Will attach an observer to the view content element to check if the image preview is loaded.
+     * If the image preview is observed, it will resolve the promise.
+     */
+    #awaitInitialImageLoad(contentEl: HTMLElement, signal: AbortSignal) {
+        const { resolve, promise } = Promise.withResolvers<void>();
+        const observer = PreviewImageImpl.srcMutationObserver(contentEl, () => {
+            resolve();
+            observer.disconnect();
+        });
+
+        signal.addEventListener('abort', () => observer.disconnect());
+
+        return promise;
+    }
+
+    /**
+     * Timeout-based approach to wait for the initial load to complete.
+     * @param ms Timeout in milliseconds to wait for the initial load to complete.
+     */
+    #awaitInitialLoadViaTimeout(ms: number) {
         return new Promise<void>((res, rej) => {
-            if (this.isContentLoaded()) return res(void 0);
+            if (this.isContentLoaded()) return res();
             setTimeout(() => {
                 if (this.isContentLoaded()) {
-                    return res(void 0);
+                    return res();
                 } else {
-                    // @ts-ignore
                     if (this._loaded) {
                         return rej(new Error(`Error loading tldraw embed: Timeout of ${ms} ms reached.`));
                     } else {
                         return rej(new Error(`Component was unloaded before its initial load was finished.`));
                     }
                 }
-            }, ms)
+            }, ms);
         });
     }
 
+    /**
+     * Checks if the view content is loaded. It is considered loaded if the image preview is rendered or the interactive mode canvas is available.
+     */
     isContentLoaded() {
         return (
             this.#viewContentEl !== undefined
@@ -554,25 +416,36 @@ export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
         );
     }
 
-    renderRoot() {
-        const container = this.#viewContentEl;
-        if (container) {
-            this.#setRoot(() => createRoot(container));
-        }
-        this.root?.render(
-            this.#viewMode === 'image' ? (
-                createElement(TldrawImageSnapshotView, {
-                    previewStore: this.#snapshotPreviewStore,
-                })
-            ) : (
-                createElement(TldrawApp, this.#setUpTldrawOptions())
-            )
-        );
+    hasView() {
+        return this.#viewComponent !== undefined;
     }
 
-    setPreviewImageOptions(options: ImageViewModeOptions) {
-        this.#previewImage.options = options;
-        this.refreshPreview();
+    renderRoot() {
+        const container = this.#viewContentEl ??= this.#createViewContentEl();
+        this.#previewImage.observePreviewImage(container, (rect) => {
+            this.#setPlaceHolderSize(rect);
+        });
+
+        const component = this.#viewComponent ??= (() => {
+            const viewComponent = new TldrawViewComponent(container)
+            this.addChild(viewComponent);
+            this.register(() => this.#viewComponent = undefined);
+            return viewComponent;
+        })();
+
+        // Wait for the component to be ready before rendering
+        setTimeout(() => {
+            switch (this.#viewMode) {
+                case 'image':
+                    component.renderImage(this.#snapshotPreviewStore);
+                    break;
+                case 'interactive':
+                    component.renderInteractive(this.#setUpTldrawOptions());
+                    break;
+                default:
+                    console.warn('Unknown view mode:', this.#viewMode);
+            }
+        }, 0);
     }
 
     async lazyLoadStoreInstance() {
@@ -581,7 +454,7 @@ export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
         this.#storeInstance = this.plugin.tlDataDocumentStoreManager.register(this.context.tFile, () => fileData, () => {
             this.#dataUpdated();
         }, false);
-        this.setPreviewImageOptions({
+        this.#previewImage.setOptions({
             ...this.#previewImage.options,
             assets: this.#storeInstance.documentStore.store.props.assets,
         });
@@ -592,21 +465,18 @@ export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
         TLDRAW_COMPONENT_LOGGING && logClass(TldrawMarkdownRenderChild, this.loadRoot, this);
         this.#updateHasShape();
         await this.lazyLoadStoreInstance();
-        this.#observePreviewImage();
         this.renderRoot();
     }
 
     unloadRoot() {
         TLDRAW_COMPONENT_LOGGING && logClass(TldrawMarkdownRenderChild, this.unloadRoot, this);
-        clearTimeout(this.#previewImage.refreshTimeout);
-        this.#observePreviewImageDisconnect();
+        this.#previewImage.clearRefreshTimeout();
+        this.#previewImage.observePreviewImageDisconnect();
         this.#setPlaceHolderSize();
-        this.#setRoot(undefined);
     }
 
     override onload(): void {
         try {
-            this.#viewContentEl = this.#createViewContentEl();
             this.loadRoot();
         } catch (e) {
             this.unload();
@@ -669,7 +539,7 @@ function createTldrawEmbedView(internalEmbedDiv: HTMLElement, {
 
 
     {// Mobile
-        let longPressTimer: NodeJS.Timer | undefined;
+        let longPressTimer: Timeout | undefined;
         tldrawEmbedViewContent.addEventListener('touchstart', (ev) => {
             clearTimeout(longPressTimer)
             longPressTimer = setTimeout(() => showEmbedContextMenu(ev, {

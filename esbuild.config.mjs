@@ -48,6 +48,9 @@ const context = await esbuild.context({
 		".json": "file",
 	},
 	outdir: ".",
+	define: {
+		"TLDRAW_COMPONENT_LOGGING": `${!prod}`,
+	}
 	// plugins: [svgr({ typescript: true })],
 });
 

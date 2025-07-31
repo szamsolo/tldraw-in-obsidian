@@ -70,4 +70,8 @@ declare module "obsidian" {
             )
         )
     }
+
+    interface Component {
+        _loaded: boolean;
+    }
 }

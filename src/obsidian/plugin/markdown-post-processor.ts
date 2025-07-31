@@ -3,7 +3,7 @@ import TldrawPlugin from "src/main";
 import { CustomMutationObserver } from "src/utils/debug-mutation-observer";
 import { ConsoleLogParams, MARKDOWN_POST_PROCESSING_LOGGING, logFn } from "src/utils/logging";
 import { BoxLike } from "tldraw";
-import { TldrawMarkdownRenderChild } from "../components/tldraw-component";
+import { TldrawMarkdownRenderChild } from "../components/markdown-render-child";
 
 /**
  * Processes the embed view for a tldraw white when including it in another obsidian note.
@@ -176,7 +176,7 @@ async function loadEmbedTldraw({
     await component.loadRoot();
 
     const observer = new CustomMutationObserver((m) => {
-        if (component?.root === undefined) {
+        if (!component.hasView()) {
             component.loadRoot().then(() => {
                 observerParent.observe(parent, { childList: true });
             });
