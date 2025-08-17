@@ -1,17 +1,26 @@
 import { TFile, debounce, Notice, Workspace, EventRef } from "obsidian";
 import { ObsidianMarkdownFileTLAssetStoreProxy, ObsidianTLAssetStore } from "src/tldraw/asset-store";
 import { processInitialData } from "src/tldraw/helpers";
-import { TLDataDocumentStore, updateFileData } from "src/utils/document";
+import { getTLMetaTemplate, makeFileDataTldr, TLDataDocumentStore, updateFileData } from "src/utils/document";
 import { safeSecondsToMs } from "src/utils/utils";
 import TldrawStoresManager, { MainStore, StoreGroup, StoreListenerContext, StoreInstanceInfo } from "src/tldraw/TldrawStoresManager";
 import { parseTLDataDocument } from "src/utils/parse";
 import TldrawPlugin from "src/main";
-import { loadSnapshot } from "tldraw";
+import { loadSnapshot, TLDRAW_FILE_EXTENSION } from "tldraw";
+import { migrateTldrawFileDataIfNecessary } from "src/utils/migrate/tl-data-to-tlstore";
+
+const formats = {
+    markdown: 'markdown',
+    tldr: 'tldr'
+} as const;
+
+type Format = typeof formats[keyof typeof formats];
 
 type MainData = {
     documentStore: TLDataDocumentStore,
     fileData: string,
     tFile: TFile,
+    format: Format,
 }
 
 type InstanceData = {
@@ -80,7 +89,13 @@ export default class TLDataDocumentStoreManager {
         const { workspace, vault } = this.plugin.app;
         const fileData = getData();
 
-        const documentStore = processInitialData(parseTLDataDocument(this.plugin.manifest.version, fileData));
+        const format = this.plugin.isTldrawFile(tFile)
+            ? formats.markdown
+            : tFile.path.endsWith(TLDRAW_FILE_EXTENSION)
+                ? formats.tldr
+                : (() => { throw new Error() })();
+
+        const documentStore = this.processFormatInitialData(format, fileData);
         const debouncedSave = this.createDebouncedSaveStoreListener(documentStore);
         let onExternalModificationsRef: undefined | EventRef;
         let onFileRenamedRef: undefined | EventRef;
@@ -92,7 +107,8 @@ export default class TLDataDocumentStoreManager {
             data: {
                 fileData,
                 tFile,
-                documentStore: documentStore,
+                documentStore,
+                format,
             },
             init: (storeGroup) => {
                 onExternalModificationsRef = vault.on('modify', async (file) => {
@@ -115,6 +131,11 @@ export default class TLDataDocumentStoreManager {
                     if (file.path !== storeGroup.main.data.tFile.path) return;
                     this.onExternalModification(workspace, storeGroup, data)
                 });
+
+                if (format !== formats.markdown) {
+                    // We don't want to proxy storing the assets in the file using the markdown file proxy if it isn't a markdown file.
+                    return;
+                }
 
                 const assetStoreProxy = new ObsidianMarkdownFileTLAssetStoreProxy(this.plugin, tFile,
                     (fileContents, _, assetFile) => {
@@ -147,8 +168,8 @@ export default class TLDataDocumentStoreManager {
     private createDebouncedSaveStoreListener(documentStore: TLDataDocumentStore) {
         return debounce(
             async (context: StoreListenerContext<MainData, InstanceData>) => {
-                const { fileData: currData, tFile } = context.storeGroup.main.data;
-                const data = await updateFileData(this.plugin.manifest, currData, documentStore);
+                const { fileData: currData, tFile, format } = context.storeGroup.main.data;
+                const data = await this.formatData(currData, documentStore, format);
                 if (currData === data) return;
                 // Do this to prevent the data from being reset by Obsidian.
                 this.propagateData(this.plugin.app.workspace, context.storeGroup, data);
@@ -188,7 +209,7 @@ export default class TLDataDocumentStoreManager {
      */
     private propagateData(workspace: Workspace, storeGroup: StoreGroup<MainData, InstanceData>, data: string, isExternal: boolean = false) {
         if (isExternal) {
-            const snapshot = processInitialData(parseTLDataDocument(this.plugin.manifest.version, data))
+            const snapshot = this.processFormatInitialData(storeGroup.main.data.format, data)
                 .store.getStoreSnapshot();
             loadSnapshot(storeGroup.main.store, snapshot);
             for (const instance of storeGroup.instances) {
@@ -204,5 +225,40 @@ export default class TLDataDocumentStoreManager {
         if (!isExternal) {
             workspace.onQuickPreview(storeGroup.main.data.tFile, data);
         }
+    }
+
+    private processFormatInitialData(format: Format, data: string) {
+        const { plugin } = this;
+
+        switch (format) {
+            case formats.markdown:
+                return processInitialData(parseTLDataDocument(plugin.manifest.version, data));
+            case formats.tldr:
+                return processInitialData({
+                    meta: getTLMetaTemplate(plugin.manifest.version),
+                    ...(
+                        data.length === 0
+                            ? { raw: undefined }
+                            : { store: migrateTldrawFileDataIfNecessary(data) }
+                    )
+                });
+        }
+
+        throw new Error("Unable to process format's initial data", {
+            cause: { format, data }
+        });
+    }
+
+    private formatData(currData: string, documentStore: TLDataDocumentStore, format: Format) {
+        switch (format) {
+            case formats.markdown:
+                return updateFileData(this.plugin.manifest, currData, documentStore)
+            case formats.tldr:
+                return makeFileDataTldr(documentStore);
+        }
+
+        throw new Error('Unsupported update format', {
+            cause: { format }
+        });
     }
 }

@@ -137,3 +137,8 @@ export async function updateFileData(manifest: PluginManifest, data: string, doc
 		stringifiedData
 	);
 }
+
+export function makeFileDataTldr(documentStore: TLDataDocumentStore) {
+    const tldrFile = createRawTldrawFile(documentStore.store);
+    return JSON.stringify(tldrawFileToJson(tldrFile));
+}

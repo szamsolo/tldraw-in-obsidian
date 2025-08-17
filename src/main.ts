@@ -10,7 +10,7 @@ import {
 	Notice,
 	getIcon,
 } from "obsidian";
-import { TldrawFileView, TldrawView } from "./obsidian/TldrawView";
+import { TldrawView } from "./obsidian/TldrawView";
 import {
 	DEFAULT_SETTINGS,
 	TldrawPluginSettings,
@@ -32,7 +32,6 @@ import {
 	TLDRAW_ICON_NAME,
 	VIEW_TYPE_MARKDOWN,
 	VIEW_TYPE_TLDRAW,
-	VIEW_TYPE_TLDRAW_FILE,
 	VIEW_TYPE_TLDRAW_READ_ONLY,
 	ViewType,
 } from "./utils/constants";
@@ -92,11 +91,6 @@ export default class TldrawPlugin extends Plugin {
 			(leaf) => new TldrawReadonly(leaf, this)
 		);
 
-		this.registerView(
-			VIEW_TYPE_TLDRAW_FILE,
-			(leaf) => new TldrawFileView(leaf, this)
-		)
-
 		// settings:
 		await this.settingsManager.loadSettings();
 		this.addSettingTab(new TldrawSettingsTab(this.app, this));
@@ -145,7 +139,7 @@ export default class TldrawPlugin extends Plugin {
 		// Change how tldraw files are displayed when reading the document, e.g. when it is embed in another Obsidian document.
 		this.registerMarkdownPostProcessor((e, c) => markdownPostProcessor(this, e, c))
 
-		this.registerExtensions(['tldr'], VIEW_TYPE_TLDRAW_FILE)
+		this.registerExtensions(['tldr'], VIEW_TYPE_TLDRAW)
 	}
 
 	onunload() {
@@ -230,7 +224,7 @@ export default class TldrawPlugin extends Plugin {
 										await this.app.vault.read(file)
 									)
 								});
-								await this.openTldrFile(newFile, 'new-tab', VIEW_TYPE_TLDRAW_FILE)
+								await this.openTldrFile(newFile, 'new-tab', VIEW_TYPE_TLDRAW)
 								new Notice(`Created a new file for editing "${newFile.path}"`)
 							})
 					})
@@ -340,13 +334,6 @@ export default class TldrawPlugin extends Plugin {
 		} as ViewState);
 	};
 
-	public setTldrawFileView = async (leaf: WorkspaceLeaf) => {
-		await leaf.setViewState({
-			type: VIEW_TYPE_TLDRAW_FILE,
-			state: { ...leaf.view.getState(), manuallyTriggered: true },
-		} as ViewState);
-	};
-
 	public setTldrawViewPreview = async (leaf: WorkspaceLeaf) => {
 		await leaf.setViewState({
 			type: VIEW_TYPE_TLDRAW_READ_ONLY,
@@ -400,9 +387,6 @@ export default class TldrawPlugin extends Plugin {
 				await this.setTldrawView(leaf)
 				break;
 			case VIEW_TYPE_TLDRAW_READ_ONLY:
-				await this.setTldrawViewPreview(leaf)
-				break;
-			case VIEW_TYPE_TLDRAW_FILE:
 				await this.setTldrawViewPreview(leaf)
 				break;
 			default:
@@ -512,6 +496,9 @@ export default class TldrawPlugin extends Plugin {
 		await this.updateViewMode(viewType, leaf);
 	};
 
+	/**
+	 * Check if {@linkcode file} is a markdown file for tldraw documents.
+	 */
 	public isTldrawFile(file: TFile) {
 		if (!file) return false;
 		return this.hasTldrawFrontMatterKey(file);

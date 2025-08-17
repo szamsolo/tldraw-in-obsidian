@@ -9,7 +9,7 @@ import { createRoot, Root } from "react-dom/client";
 import { createElement } from "react";
 import TldrawSettingsTabView from "src/components/settings/TldrawSettingsTabView";
 import { destinationMethods, themePreferenceRecord } from "./settings/constants";
-import { VIEW_TYPE_TLDRAW, VIEW_TYPE_TLDRAW_FILE, ViewType } from "src/utils/constants";
+import { VIEW_TYPE_TLDRAW, ViewType } from "src/utils/constants";
 
 export type ThemePreference = keyof typeof themePreferenceRecord;
 
@@ -84,7 +84,7 @@ export type UserTLCameraOptions = Pick<Partial<TLCameraOptions>, 'panSpeed' | 'z
 /**
  * tldraw views, but for the `.md` extension
  */
-type MarkdownViewType = Exclude<ViewType, typeof VIEW_TYPE_TLDRAW_FILE>
+type MarkdownViewType = ViewType
 
 export interface TldrawPluginSettings extends DeprecatedFileDestinationSettings {
 	fileDestinations: FileDestinationsSettings;

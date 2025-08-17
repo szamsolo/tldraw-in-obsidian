@@ -1,6 +1,6 @@
 import { Notice, TFile } from "obsidian";
 import TldrawPlugin from "src/main";
-import { FILE_EXTENSION, PANE_TARGETS, PaneTarget, VIEW_TYPE_MARKDOWN, VIEW_TYPE_TLDRAW, VIEW_TYPE_TLDRAW_FILE } from "src/utils/constants";
+import { FILE_EXTENSION, PANE_TARGETS, PaneTarget, VIEW_TYPE_MARKDOWN, VIEW_TYPE_TLDRAW } from "src/utils/constants";
 import { importTldrawFile } from "src/utils/file";
 import { TLDRAW_FILE_EXTENSION } from "tldraw";
 
@@ -14,7 +14,7 @@ async function createTldrawFile(plugin: TldrawPlugin, {
     try {
         const file = await plugin.createUntitledTldrFile({ inMarkdown, attachTo, });
         if (pane) {
-            await plugin.openTldrFile(file, pane, inMarkdown ? VIEW_TYPE_TLDRAW : VIEW_TYPE_TLDRAW_FILE)
+            await plugin.openTldrFile(file, pane, VIEW_TYPE_TLDRAW)
         }
         return file;
     } catch (e) {
