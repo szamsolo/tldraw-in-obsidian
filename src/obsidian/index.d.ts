@@ -1,6 +1,34 @@
 import { } from "obsidian";
 
 declare module "obsidian" {
+    namespace App {
+        interface EmbedFactoryContext {
+            app: App
+            containerEl: HTMLElement
+            depth: number
+            displayMode: boolean
+            linktext: string
+            showInline: boolean
+            /**
+             * The path to the file that {@linkcode containerEl} is embed in
+             */
+            sourcePath: string
+        }
+
+        interface ExtensionEmbedFactory {
+            /**
+             * @param context The context for the embed created from {@linkcode tFile}.
+             * @param tFile The embed file.
+             */
+            (context: EmbedFactoryContext, tFile: TFile, param2: string): void
+        }
+
+        interface EmbedRegistry {
+            registerExtension(extension: string, factory: ExtensionEmbedFactory): void
+            unregisterExtension(extension: string): void
+        }
+    }
+
     interface App {
         /**
          * 
@@ -8,6 +36,7 @@ declare module "obsidian" {
          * @returns 
          */
         openWithDefaultApp(path: string): void
+        embedRegistry: App.EmbedRegistry
     }
 
     interface Menu {

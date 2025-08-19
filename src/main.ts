@@ -59,6 +59,7 @@ import TLDataDocumentStoreManager from "./obsidian/plugin/TLDataDocumentStoreMan
 import { getTldrawFileDestination } from "./obsidian/plugin/file-destination";
 import { tldrawFileToJson } from "./utils/tldraw-file/tldraw-file-to-json";
 import UserSettingsManager from "./obsidian/settings/UserSettingsManager";
+import { createEmbedTldraw } from "./obsidian/components/markdown-render-child";
 
 @pluginBuild
 export default class TldrawPlugin extends Plugin {
@@ -138,6 +139,17 @@ export default class TldrawPlugin extends Plugin {
 
 		// Change how tldraw files are displayed when reading the document, e.g. when it is embed in another Obsidian document.
 		this.registerMarkdownPostProcessor((e, c) => markdownPostProcessor(this, e, c))
+
+		this.app.embedRegistry.registerExtension('tldr', (context, tFile, _) => {
+			const { component } = createEmbedTldraw({
+				file: tFile,
+				internalEmbedDiv: context.containerEl,
+				plugin: this
+			});
+			return component;
+		})
+
+		this.register(() => this.app.embedRegistry.unregisterExtension('tldr'));
 
 		this.registerExtensions(['tldr'], VIEW_TYPE_TLDRAW)
 	}

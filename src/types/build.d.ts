@@ -7,6 +7,7 @@ declare global {
      * ```
      */
     const TLDRAW_COMPONENT_LOGGING: boolean;
+    const MARKDOWN_POST_PROCESSING_LOGGING: boolean;
 }
 
 export {};

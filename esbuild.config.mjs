@@ -50,6 +50,7 @@ const context = await esbuild.context({
 	outdir: ".",
 	define: {
 		"TLDRAW_COMPONENT_LOGGING": `${!prod}`,
+		"MARKDOWN_POST_PROCESSING_LOGGING": `${!prod}`,
 	}
 	// plugins: [svgr({ typescript: true })],
 });

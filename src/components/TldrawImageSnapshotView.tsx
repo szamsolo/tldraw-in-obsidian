@@ -1,5 +1,6 @@
 import React, { ComponentProps, ContextType, createContext, CSSProperties, ReactNode, useMemo, useSyncExternalStore } from "react";
 import { ImageViewModeOptions } from "src/obsidian/helpers/TldrawAppEmbedViewController";
+import { logFn } from "src/utils/logging";
 import { Box, TldrawImage } from "tldraw";
 
 export type TldrawImageSnapshot = ComponentProps<typeof TldrawImage>['snapshot'];
@@ -109,11 +110,18 @@ function TldrawImageContextProviders({
     ), [previewSize])
 
     const tldrawImageContextValue = useMemo((): ContextType<typeof TldrawImageContext> => {
-        const { bounds, ...rest } = previewOptions;
+        const { bounds, padding, ...rest } = previewOptions;
+        TLDRAW_COMPONENT_LOGGING && logFn(TldrawImageContextProviders, {
+            bounds,
+            box: !bounds ? undefined : Box.From(bounds),
+            padding,
+        })
         return (
             {
                 props: {
                     bounds: bounds === undefined ? undefined : Box.From(bounds),
+                    // If bounds are specified, then make the padding zero since it will interfere with the preview bounds
+                    padding: bounds ? 0 : padding,
                     ...rest,
                 }
             }

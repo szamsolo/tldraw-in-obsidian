@@ -16,6 +16,7 @@ import { logClass } from "src/utils/logging";
 import TldrawViewComponent from "../tldraw-view-component";
 import PreviewImageImpl from "./preview-image";
 import SnapshotPreviewSyncStoreImpl from "./snapshot-preview-store";
+import { MarkdownEmbed } from "../../markdown-embed";
 
 const boundsSelectorToolIconName = `tool-${BoundsSelectorTool.id}`;
 
@@ -32,6 +33,9 @@ type EmbedPageOptions = Pick<ImageViewModeOptions, 'bounds'>;
 type Timeout = number;
 
 export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
+    #workspaceLeafDeferrables = new Set<() => void>();
+    #workspaceLeafObserverDisconnect?: () => void;
+    #embedValuesObserverDisconnect?: () => void;
     #storeInstance?: DocumentStoreInstance;
     #currentMenu?: Menu;
     #viewContentEl?: HTMLElement;
@@ -45,46 +49,24 @@ export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
      */
     readonly #snapshotPreviewStore: SnapshotPreviewSyncStoreImpl;
 
-    readonly plugin: TldrawPlugin;
-
     constructor(
-        containerEl: HTMLElement,
-        plugin: TldrawPlugin,
+        public readonly embed: MarkdownEmbed,
+        public readonly plugin: TldrawPlugin,
         public readonly context: {
             tFile: TFile,
             refreshTimeoutDelay: number,
-            initialEmbedValues: {
-                imageSize: { width: number, height: number },
-                bounds?: BoxLike,
-                showBg: boolean,
-                page?: string,
-            },
-            /**
-             * Called whenever the bounds are updated using the {@linkcode BoundsSelectorTool}
-             * @param bounds 
-             * @returns 
-             */
-            onUpdatedBounds: (page: string, bounds?: BoxLike) => void,
-            onUpdatedSize: (size: { width: number, height: number }) => void,
-            /**
-             * 
-             * @param cb Callback to invoke when the workspace leaf is visible again.
-             * @returns Callback to cancel the invocation if not invoked yet.
-             */
-            deferUntilIsShown: (cb: () => void) => (() => void),
-            isWorkspaceLeafShown: () => boolean,
         },
     ) {
-        super(containerEl);
-        this.plugin = plugin;
-        const pageId = _pageId(context.initialEmbedValues.page);
+        super(embed.containerEl);
+        const initialEmbedValues = embed.parseEmbedValues(plugin.settings.embeds.showBg);
+        const pageId = _pageId(initialEmbedValues.page);
         if (pageId) {
             this.#embedPagesOptions = {
-                [pageId]: { bounds: context.initialEmbedValues.bounds }
+                [pageId]: { bounds: initialEmbedValues.bounds }
             };
         }
         this.#previewImage = new PreviewImageImpl({
-            size: context.initialEmbedValues.imageSize,
+            size: initialEmbedValues.imageSize,
             refreshTimeoutDelay: context.refreshTimeoutDelay,
             options: {
                 assetUrls: {
@@ -92,8 +74,8 @@ export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
                     icons: plugin.getIconOverrides(),
                 },
                 pageId,
-                background: context.initialEmbedValues.showBg,
-                bounds: context.initialEmbedValues.bounds,
+                background: initialEmbedValues.showBg,
+                bounds: initialEmbedValues.bounds,
                 padding: plugin.settings.embeds.padding,
                 darkMode: (() => {
                     const { themeMode } = plugin.settings;
@@ -101,12 +83,17 @@ export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
                     else if (themeMode === "light") return false;
                     else return isObsidianThemeDark();
                 })(),
-                targetDocument: containerEl.ownerDocument,
+                targetDocument: embed.containerEl.ownerDocument,
             },
         }, {
             getStoreInstance: () => this.#storeInstance,
-            isVisible: () => this.context.isWorkspaceLeafShown() && this._loaded,
-            deferUntilIsShown: (cb) => this.context.deferUntilIsShown(cb),
+            isVisible: () => this.embed.isWorkspaceLeafShown() && this._loaded,
+            deferUntilIsShown: (cb) => {
+                this.#workspaceLeafDeferrables.add(cb);
+                return () => {
+                    this.#workspaceLeafDeferrables.delete(cb);
+                }
+            },
         });
 
         this.#snapshotPreviewStore = new SnapshotPreviewSyncStoreImpl(this.#previewImage);
@@ -182,7 +169,11 @@ export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
                                 console.warn('Page id does not start with "page:"', { pageId })
                                 return;
                             }
-                            this.context.onUpdatedBounds(pageId.substring(5), bounds);
+                            (this.embed.getUpdater()?.updateBounds ?? ((_, bounds) => {
+                                // Probably in reading view
+                                console.warn("No active editor; setting the controller's bounds instead.");
+                                this.updateBounds(bounds)
+                            }))(pageId.substring(5), bounds)
                         },
                     }),
                 ],
@@ -272,7 +263,7 @@ export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
                     height: Math.max(height, 0),
                 };
                 if (!preview) {
-                    this.context.onUpdatedSize(size);
+                    this.embed.getUpdater()?.updateSize(size);
                 } else {
                     this.#previewImage.setSize(size);
                 }
@@ -306,6 +297,7 @@ export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
         showBg: boolean,
         page?: string,
     }) {
+        TLDRAW_COMPONENT_LOGGING && logClass(TldrawMarkdownRenderChild, this.updateEmbedValues, { bounds, imageSize })
         const { options: currOptions } = this.#previewImage;
         if (imageSize.height !== this.#previewImage.size.height || imageSize.width !== this.#previewImage.size.width) {
             this.#previewImage.setSize(imageSize);
@@ -343,6 +335,7 @@ export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
     }
 
     updateBounds(bounds?: BoxLike) {
+        TLDRAW_COMPONENT_LOGGING && logClass(TldrawMarkdownRenderChild, this.updateBounds);
         this.#previewImage.setOptions({
             ...this.#previewImage.options,
             bounds,
@@ -421,12 +414,20 @@ export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
     }
 
     renderRoot() {
+        TLDRAW_COMPONENT_LOGGING && logClass(TldrawMarkdownRenderChild, this.renderRoot, {
+            containerEl: this.containerEl,
+            parentEl: this.containerEl.parentElement
+        });
         const container = this.#viewContentEl ??= this.#createViewContentEl();
         this.#previewImage.observePreviewImage(container, (rect) => {
             this.#setPlaceHolderSize(rect);
         });
 
         const component = this.#viewComponent ??= (() => {
+            TLDRAW_COMPONENT_LOGGING && logClass(TldrawMarkdownRenderChild, this.renderRoot, 'component init', {
+                containerEl: this.containerEl,
+                parentEl: this.containerEl.parentElement
+            });
             const viewComponent = new TldrawViewComponent(container)
             this.addChild(viewComponent);
             this.register(() => this.#viewComponent = undefined);
@@ -435,6 +436,10 @@ export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
 
         // Wait for the component to be ready before rendering
         setTimeout(() => {
+            TLDRAW_COMPONENT_LOGGING && logClass(TldrawMarkdownRenderChild, this.renderRoot, 'timeout', {
+                containerEl: this.containerEl,
+                parentEl: this.containerEl.parentElement
+            });
             switch (this.#viewMode) {
                 case 'image':
                     component.renderImage(this.#snapshotPreviewStore);
@@ -462,8 +467,12 @@ export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
     }
 
     async loadRoot() {
-        TLDRAW_COMPONENT_LOGGING && logClass(TldrawMarkdownRenderChild, this.loadRoot, this);
+        TLDRAW_COMPONENT_LOGGING && logClass(TldrawMarkdownRenderChild, this.loadRoot, this, {
+            containerEl: this.containerEl,
+            parentEl: this.containerEl.parentElement
+        });
         this.#updateHasShape();
+        await this.#setUpObservers();
         await this.lazyLoadStoreInstance();
         this.renderRoot();
     }
@@ -488,6 +497,54 @@ export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
         this.unloadRoot();
         this.unloadStoreInstance();
         this.containerEl.empty();
+    }
+
+    /**
+     * Compatibility with `.tldr` embed factory
+     */
+    loadFile() {
+        this.lazyLoadStoreInstance();
+    }
+
+    async #setUpObservers() {
+        TLDRAW_COMPONENT_LOGGING && logClass(TldrawMarkdownRenderChild, this.#setUpObservers, this, 'before resolve', {
+            containerEl: this.containerEl,
+            parentEl: this.containerEl.parentElement
+        });
+        // Quick hack to ensure the parent element is available.
+        await Promise.resolve();
+        TLDRAW_COMPONENT_LOGGING && logClass(TldrawMarkdownRenderChild, this.#setUpObservers, this, 'after resolve', {
+            containerEl: this.containerEl,
+            parentEl: this.containerEl.parentElement
+        });
+
+        this.#workspaceLeafObserverDisconnect?.();
+        const workspaceLeafObserverDisconnect = this.#workspaceLeafObserverDisconnect = this.embed.observeWorkspaceLeafIsShown(
+            (isShown) => {
+                TLDRAW_COMPONENT_LOGGING && logClass(TldrawMarkdownRenderChild, this.#setUpObservers, 'workspace leaf isShown observer', {
+                    isShown,
+                });
+                if (!isShown) return;
+                const _deferrables = [...this.#workspaceLeafDeferrables];
+                this.#workspaceLeafDeferrables.clear();
+                for (const deferrable of _deferrables) {
+                    deferrable();
+                }
+            }
+        );
+        this.register(() => workspaceLeafObserverDisconnect?.())
+
+        this.#embedValuesObserverDisconnect?.();
+        const embedValuesObserverDisconnect = this.#embedValuesObserverDisconnect = this.embed.observeEmbedValues(
+            (values) => {
+                TLDRAW_COMPONENT_LOGGING && logClass(TldrawMarkdownRenderChild, this.#setUpObservers, 'embed values observer', {
+                    values
+                });
+                this.updateEmbedValues(values)
+            },
+            () => this.plugin.settings.embeds.showBg
+        );
+        this.register(() => embedValuesObserverDisconnect?.())
     }
 }
 
