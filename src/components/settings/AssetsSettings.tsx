@@ -10,7 +10,6 @@ import { DownloadInfo } from "src/utils/fetch/download";
 import { defaultFonts, fontExtensions, FontGroupMatcher, iconExtensions, iconTypes } from "src/obsidian/settings/constants";
 import { FileSearchModal } from "src/obsidian/modal/FileSearchModal";
 import { Notice, TFile, TFolder } from "obsidian";
-import { TLDRAW_VERSION } from "src/utils/constants";
 
 function AssetsSettingsGroup({
     downloadAll,

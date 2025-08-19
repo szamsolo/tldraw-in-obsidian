@@ -1,7 +1,7 @@
 import { FileView, Menu, Notice, TFile, WorkspaceLeaf } from "obsidian";
 import { TldrawAppProps } from "src/components/TldrawApp";
 import TldrawPlugin from "src/main";
-import { PaneTarget, TLDRAW_ICON_NAME, VIEW_TYPE_TLDRAW, VIEW_TYPE_TLDRAW_FILE, VIEW_TYPE_TLDRAW_READ_ONLY, ViewType } from "src/utils/constants";
+import { PaneTarget, TLDRAW_ICON_NAME, VIEW_TYPE_TLDRAW, VIEW_TYPE_TLDRAW_READ_ONLY, ViewType } from "src/utils/constants";
 import { TldrawLoadableMixin } from "./TldrawMixins";
 import { TLDRAW_FILE_EXTENSION } from "tldraw";
 import { migrateTldrawFileDataIfNecessary } from "src/utils/migrate/tl-data-to-tlstore";
@@ -27,12 +27,7 @@ export class TldrawReadonly extends TldrawLoadableMixin(FileView) {
     onload() {
         super.onload();
         this.addAction(TLDRAW_ICON_NAME, "Edit", async () => {
-            const { file } = this;
-            if (file !== null && file.path.endsWith(TLDRAW_FILE_EXTENSION)) {
-                this.plugin.updateViewMode(VIEW_TYPE_TLDRAW_FILE);
-            } else {
-                this.plugin.updateViewMode(VIEW_TYPE_TLDRAW);
-            }
+            await this.plugin.updateViewMode(VIEW_TYPE_TLDRAW);
         });
     }
 

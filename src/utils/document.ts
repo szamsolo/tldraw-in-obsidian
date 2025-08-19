@@ -2,7 +2,6 @@ import { JsonObject, SerializedStore, TldrawFile, TLRecord, TLStore } from "tldr
 import {
 	TLDATA_DELIMITER_END,
 	TLDATA_DELIMITER_START,
-	TLDRAW_VERSION,
 } from "./constants";
 import { tldrawFileToJson } from "./tldraw-file/tldraw-file-to-json";
 import { PluginManifest } from "obsidian";
@@ -136,4 +135,9 @@ export async function updateFileData(manifest: PluginManifest, data: string, doc
 		TLDATA_DELIMITER_END,
 		stringifiedData
 	);
+}
+
+export function makeFileDataTldr(documentStore: TLDataDocumentStore) {
+    const tldrFile = createRawTldrawFile(documentStore.store);
+    return JSON.stringify(tldrawFileToJson(tldrFile));
 }

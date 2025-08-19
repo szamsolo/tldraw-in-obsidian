@@ -12,6 +12,4 @@ export function logFn<T extends CallableFunction>(target: T, ...args: ConsoleLog
 }
 
 export const LOGGING_ENABLED = false;
-export const MARKDOWN_POST_PROCESSING_LOGGING = LOGGING_ENABLED && false;
-export const TLDRAW_COMPONENT_LOGGING = LOGGING_ENABLED && false;
 export const TLDRAW_STORES_MANAGER_LOGGING = LOGGING_ENABLED && false;

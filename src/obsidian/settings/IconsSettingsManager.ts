@@ -2,7 +2,6 @@ import TldrawPlugin from "src/main"
 import { IconNames } from "src/types/tldraw"
 import { updateIconOverrides } from "../plugin/settings"
 import { Notice } from "obsidian"
-import { TLDRAW_VERSION } from "src/utils/constants";
 import { iconTypes } from "./constants";
 import { DownloadInfo } from "src/utils/fetch/download";
 

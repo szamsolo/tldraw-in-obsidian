@@ -64,6 +64,9 @@ export default function TldrawSettingsTabView({
                 ))} */}
                 <activeTab.Component />
             </SettingsManagerContext.Provider>
+            <div>
+                <span>tldraw version: {TLDRAW_VERSION}</span>
+            </div>
         </>
     );
 }

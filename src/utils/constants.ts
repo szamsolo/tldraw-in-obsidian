@@ -1,19 +1,15 @@
 export type PaneTarget = typeof PANE_TARGETS[number];
 export type ViewType = typeof VIEW_TYPES[number];
 /**
- * For `.md` ending files.
+ * For `.md` and `.tldr` ending files.
  */
 export const VIEW_TYPE_TLDRAW = "tldraw-view"; // custom view type
-/**
- * For `.tldr` ending files.
- */
-export const VIEW_TYPE_TLDRAW_FILE = "tldraw-file"; // custom view type
+
 export const VIEW_TYPE_TLDRAW_READ_ONLY = "tldraw-read-only"; // custom view type
 export const VIEW_TYPE_MARKDOWN = "markdown"; // NOT ACTUALLY A CUSTOM VIEW TYPE, its built in from obsidian
-export const VIEW_TYPES = [VIEW_TYPE_MARKDOWN, VIEW_TYPE_TLDRAW, VIEW_TYPE_TLDRAW_FILE, VIEW_TYPE_TLDRAW_READ_ONLY] as const;
+export const VIEW_TYPES = [VIEW_TYPE_MARKDOWN, VIEW_TYPE_TLDRAW, VIEW_TYPE_TLDRAW_READ_ONLY] as const;
 export const PANE_TARGETS = ["new-window", "new-tab", "current-tab", "split-tab"] as const;
 
-export const TLDRAW_VERSION = "3.13.0";
 export const FILE_EXTENSION = ".md";
 export const FRONTMATTER_KEY = "tldraw-file";
 export const TLDATA_DELIMITER_START =

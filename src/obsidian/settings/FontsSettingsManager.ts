@@ -2,7 +2,6 @@ import TldrawPlugin from "src/main"
 import { FontTypes } from "src/types/tldraw"
 import { updateFontOverrides } from "../plugin/settings"
 import { Notice } from "obsidian"
-import { TLDRAW_VERSION } from "src/utils/constants";
 import { defaultFonts } from "./constants";
 import { DownloadInfo } from "src/utils/fetch/download";
 
