@@ -1,6 +1,7 @@
 import esbuild from "esbuild";
 import process from "process";
 import builtins from "builtin-modules";
+import { readFileSync } from "fs";
 // import svgr from "esbuild-plugin-svgr";
 
 const banner = `/*
@@ -10,6 +11,13 @@ if you want to view the source, please visit the github repository of this plugi
 `;
 
 const prod = process.argv[2] === "production";
+
+const TLDRAW_VERSION = (() => {
+	const json = JSON.parse(readFileSync(`${import.meta.dirname}/node_modules/tldraw/package.json`));
+	return json.version;
+})();
+
+console.log({ TLDRAW_VERSION })
 
 const context = await esbuild.context({
 	banner: {
@@ -51,6 +59,7 @@ const context = await esbuild.context({
 	define: {
 		"TLDRAW_COMPONENT_LOGGING": `${!prod}`,
 		"MARKDOWN_POST_PROCESSING_LOGGING": `${!prod}`,
+		"TLDRAW_VERSION": `"${TLDRAW_VERSION}"`,
 	}
 	// plugins: [svgr({ typescript: true })],
 });

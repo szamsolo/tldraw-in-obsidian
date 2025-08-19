@@ -1,4 +1,3 @@
-import { TLDRAW_VERSION } from "./constants";
 import { getTLMetaTemplate, TLData, TLExistingDataDocument, TLDataMaybeSerializedStore } from "./document";
 import { tLDataToTLStore } from "./migrate/tl-data-to-tlstore";
 import { migrationOld } from "./migrate/old";

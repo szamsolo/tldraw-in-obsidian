@@ -8,6 +8,12 @@ declare global {
      */
     const TLDRAW_COMPONENT_LOGGING: boolean;
     const MARKDOWN_POST_PROCESSING_LOGGING: boolean;
+    /**
+     * The current `tldraw` package version as defined in `node_modules`.
+     * 
+     * Injected at build time.
+     */
+    const TLDRAW_VERSION: string;
 }
 
 export {};

@@ -10,7 +10,6 @@ export const VIEW_TYPE_MARKDOWN = "markdown"; // NOT ACTUALLY A CUSTOM VIEW TYPE
 export const VIEW_TYPES = [VIEW_TYPE_MARKDOWN, VIEW_TYPE_TLDRAW, VIEW_TYPE_TLDRAW_READ_ONLY] as const;
 export const PANE_TARGETS = ["new-window", "new-tab", "current-tab", "split-tab"] as const;
 
-export const TLDRAW_VERSION = "3.13.0";
 export const FILE_EXTENSION = ".md";
 export const FRONTMATTER_KEY = "tldraw-file";
 export const TLDATA_DELIMITER_START =
