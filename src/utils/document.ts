@@ -81,12 +81,12 @@ export const frontmatterTemplate = (data: string, tags: string[]) => {
 	})
 	let str = "";
 	str += "---\n";
-	str += "\n";
 	str += `${data}\n`;
 	if(validTags.length) {
-		str += `tags:\n[${validTags.join(', ')}]\n`;
+		str += `tags:\n`;
+		str += validTags.map((e) => `  - ${e}`).join('\n')
+		str += '\n'
 	}
-	str += "\n";
 	str += "---\n";
 	return str;
 };
