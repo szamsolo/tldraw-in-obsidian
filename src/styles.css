@@ -378,3 +378,32 @@ div[data-type="tldraw-read-only"] .view-content.tldraw-view-content {
 	flex-wrap: wrap;
 	gap: var(--size-4-2);
 }
+
+
+/* Copied from tldraw.com */
+.tl-shape[data-shape-type="arrow"] .tl-text {
+    height: max-content;
+}
+
+/* Copied from tldraw.com */
+.tl-shape[data-shape-type="arrow"] .tl-text-label {
+    position: absolute;
+    top: -1px;
+    left: -1px;
+    width: 2px;
+    height: 2px;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    color: var(--tl-color-text);
+    text-shadow: var(--tl-text-outline);
+}
+
+/* Copied from tldraw.com */
+.tl-shape[data-shape-type="arrow"] .tl-text-label__inner {
+    height: max-content;
+    box-sizing: content-box;
+    border-radius: var(--tl-radius-1);
+}
