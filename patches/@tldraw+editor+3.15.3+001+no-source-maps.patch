@@ -1,8 +1,8 @@
 diff --git a/node_modules/@tldraw/editor/dist-esm/index.d.mts b/node_modules/@tldraw/editor/dist-esm/index.d.mts
-index 9579d6b..c8aed15 100644
+index 5029238..85c5469 100644
 --- a/node_modules/@tldraw/editor/dist-esm/index.d.mts
 +++ b/node_modules/@tldraw/editor/dist-esm/index.d.mts
-@@ -5790,7 +5790,7 @@ export declare interface SvgExportContext {
+@@ -5840,7 +5840,7 @@ export declare interface SvgExportContext {
  /** @public */
  export declare interface SvgExportDef {
      key: string;
@@ -32,6 +32,19 @@ index 4cb8e6d..490629a 100644
          };
        }
      },
+diff --git a/node_modules/@tldraw/editor/dist-esm/lib/editor/Editor.mjs b/node_modules/@tldraw/editor/dist-esm/lib/editor/Editor.mjs
+index 9826bd8..cbdd724 100644
+--- a/node_modules/@tldraw/editor/dist-esm/lib/editor/Editor.mjs
++++ b/node_modules/@tldraw/editor/dist-esm/lib/editor/Editor.mjs
+@@ -3973,7 +3973,7 @@ class Editor extends (_a = EventEmitter, _getIsShapeHiddenCache_dec = [computed]
+       const geometry = this.getShapeGeometry(shape);
+       const isGroup = geometry instanceof Group2d;
+       const pointInShapeSpace = this.getPointInShapeSpace(shape, point);
+-      if (this.isShapeOfType(shape, "frame") || this.isShapeOfType(shape, "arrow") && shape.props.text.trim() || (this.isShapeOfType(shape, "note") || this.isShapeOfType(shape, "geo") && shape.props.fill === "none") && this.getShapeUtil(shape).getText(shape)?.trim()) {
++      if (this.isShapeOfType(shape, "frame") || (this.isShapeOfType(shape, "note") || this.isShapeOfType(shape, "arrow") || this.isShapeOfType(shape, "geo") && shape.props.fill === "none") && this.getShapeUtil(shape).getText(shape)?.trim()) {
+         for (const childGeometry of geometry.children) {
+           if (childGeometry.isLabel && childGeometry.isPointInBounds(pointInShapeSpace)) {
+             return shape;
 diff --git a/node_modules/@tldraw/editor/dist-esm/lib/editor/managers/FontManager/FontManager.mjs b/node_modules/@tldraw/editor/dist-esm/lib/editor/managers/FontManager/FontManager.mjs
 index 7bb946b..268cb0d 100644
 --- a/node_modules/@tldraw/editor/dist-esm/lib/editor/managers/FontManager/FontManager.mjs
@@ -225,6 +238,20 @@ index eefd126..9f82c62 100644
  				}
  			}
  		},
+diff --git a/node_modules/@tldraw/editor/src/lib/editor/Editor.ts b/node_modules/@tldraw/editor/src/lib/editor/Editor.ts
+index e019ba9..50c90d1 100644
+--- a/node_modules/@tldraw/editor/src/lib/editor/Editor.ts
++++ b/node_modules/@tldraw/editor/src/lib/editor/Editor.ts
+@@ -5222,8 +5222,8 @@ export class Editor extends EventEmitter<TLEventMap> {
+ 			// Check labels first
+ 			if (
+ 				this.isShapeOfType<TLFrameShape>(shape, 'frame') ||
+-				(this.isShapeOfType<TLArrowShape>(shape, 'arrow') && shape.props.text.trim()) ||
+ 				((this.isShapeOfType<TLNoteShape>(shape, 'note') ||
++					this.isShapeOfType<TLArrowShape>(shape, 'arrow') ||
+ 					(this.isShapeOfType<TLGeoShape>(shape, 'geo') && shape.props.fill === 'none')) &&
+ 					this.getShapeUtil(shape).getText(shape)?.trim())
+ 			) {
 diff --git a/node_modules/@tldraw/editor/src/lib/editor/managers/FontManager/FontManager.ts b/node_modules/@tldraw/editor/src/lib/editor/managers/FontManager/FontManager.ts
 index a6895b6..8e53d84 100644
 --- a/node_modules/@tldraw/editor/src/lib/editor/managers/FontManager/FontManager.ts
