@@ -25,6 +25,9 @@
 
 	/* fixes some positioning problems that tldraw has due to bringing embedded into another app */
 	transform: translate3d(0, 0, 0);
+
+	/* Prevents Obsidian from displaying their tooltips */
+	--no-tooltip: true;
 }
 
 /* OVERRIDING button:not(.clickable-icon) back to tldraw's original styles: */
