@@ -4,6 +4,7 @@ import TldrawPlugin from "src/main";
 import { MARKDOWN_ICON_NAME, VIEW_TYPE_MARKDOWN } from "src/utils/constants";
 import { createRootAndRenderTldrawApp, TldrawAppProps, TldrawAppStoreProps } from "src/components/TldrawApp";
 import TldrawAssetsModal from "./modal/TldrawAssetsModal";
+import { parseDeepLinkString, TLDeepLink } from "tldraw";
 
 /**
  * Implements overrides for {@linkcode FileView.onload} and {@linkcode FileView.onunload}
@@ -23,6 +24,7 @@ export function TldrawLoadableMixin<T extends abstract new (...args: any[]) => F
         private onUnloadCallbacks: (() => void)[] = [];
 
         #storeProps?: TldrawAppStoreProps;
+        #deepLink?: TLDeepLink;
 
         #unregisterViewAssetsActionCallback?: () => void;
         #unregisterOnWindowMigrated?: () => void;
@@ -66,9 +68,36 @@ export function TldrawLoadableMixin<T extends abstract new (...args: any[]) => F
             this.onUnloadCallbacks.push(cb);
         }
 
+        setEphemeralState(state: unknown): void {
+            // If a deep link is present when the document is opened, set the deeplink variable so the editor is opened at the deep link.
+            if (
+                typeof state === 'object' && state
+                && 'tldrawDeepLink' in state
+                && typeof state.tldrawDeepLink === 'string'
+            ) {
+                const tldrawDeepLink = state.tldrawDeepLink;
+                try {
+                    this.#deepLink = parseDeepLinkString(tldrawDeepLink);
+                    return;
+                } catch (e) {
+                    console.error('Unable to parse deeplink:', tldrawDeepLink);
+                }
+            }
+        }
+
         protected getTldrawOptions(): TldrawAppProps['options'] {
             return {
-                onEditorMount: (editor) => editor.zoomToFit()
+                onEditorMount: (editor) => {
+                    const viewState = this.getEphemeralState();
+                    console.log(this.#deepLink)
+                    console.log({ viewState })
+                    if (this.#deepLink) {
+                        console.log(this.#deepLink)
+                        editor.navigateToDeepLink(this.#deepLink);
+                        return;
+                    }
+                    return editor.zoomToFit();
+                }
             };
         }
 

@@ -1,7 +1,8 @@
 import { getCmViewWidget } from "src/obsidian/helpers/cm-view";
 import { parseEmbedValues, updateEmbed, updateEmbedBounds } from "src/obsidian/helpers/embeds";
+import toPageId from "src/tldraw/helpers/string-to-page-id";
 import { logClass } from "src/utils/logging";
-import { BoxLike } from "tldraw";
+import { BoxLike, TLDeepLink } from "tldraw";
 
 interface WorkspaceLeafIsShownCallback {
     (isShown: boolean, workspaceLeafEl: HTMLElement, ...args: Parameters<MutationCallback>): void
@@ -99,5 +100,36 @@ export class MarkdownEmbed {
 
     parseEmbedValues(showBgDefault: boolean) {
         return parseEmbedValues(this.containerEl, { showBgDefault });
+    }
+
+    getEditorWidget() {
+        return getCmViewWidget(this.containerEl);
+    }
+
+    getDeepLink(): TLDeepLink | undefined {
+        const {
+            bounds,
+            page
+        } = this.parseEmbedValues(
+            // This value does not matter, we just want the destructured values from the return
+            false
+        );
+
+        const pageId = toPageId(page);
+
+        if(bounds) {
+            return {
+                type: 'viewport',
+                pageId,
+                bounds
+            }
+        }
+
+        if(pageId) {
+            return {
+                type: 'page',
+                pageId
+            }
+        }
     }
 }

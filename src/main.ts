@@ -9,6 +9,7 @@ import {
 	moment,
 	Notice,
 	getIcon,
+	OpenViewState,
 } from "obsidian";
 import { TldrawView } from "./obsidian/TldrawView";
 import {
@@ -332,25 +333,25 @@ export default class TldrawPlugin extends Plugin {
 		useStatusBarState.setState({ view: { mode: view, source: "plugin" } });
 	}
 
-	public setMarkdownView = async (leaf: WorkspaceLeaf) => {
+	public setMarkdownView = async (leaf: WorkspaceLeaf, eState?: unknown) => {
 		await leaf.setViewState({
 			type: VIEW_TYPE_MARKDOWN,
 			state: { ...leaf.view.getState(), manuallyTriggered: true },
-		} as ViewState);
+		} as ViewState, eState);
 	};
 
-	public setTldrawView = async (leaf: WorkspaceLeaf) => {
+	public setTldrawView = async (leaf: WorkspaceLeaf, eState?: unknown) => {
 		await leaf.setViewState({
 			type: VIEW_TYPE_TLDRAW,
 			state: { ...leaf.view.getState(), manuallyTriggered: true },
-		} as ViewState);
+		} as ViewState, eState);
 	};
 
-	public setTldrawViewPreview = async (leaf: WorkspaceLeaf) => {
+	public setTldrawViewPreview = async (leaf: WorkspaceLeaf, eState?: unknown) => {
 		await leaf.setViewState({
 			type: VIEW_TYPE_TLDRAW_READ_ONLY,
 			state: { ...leaf.view.getState(), manuallyTriggered: true },
-		} as ViewState);
+		} as ViewState, eState);
 	};
 
 	/**
@@ -385,25 +386,25 @@ export default class TldrawPlugin extends Plugin {
 		this.leafFileViewModes[id] = viewMode;
 	}
 
-	public async updateViewMode(view: ViewType, leaf?: WorkspaceLeaf) {
+	public async updateViewMode(view: ViewType, leaf?: WorkspaceLeaf, eState?: unknown) {
 		view ??= VIEW_TYPE_TLDRAW;
 		leaf ??= this.app.workspace.getLeaf(false);
 
 		// guard clause to prevent changing the view if the view is already correct:
-		const { type } = leaf?.getViewState();
+		const { type } = leaf.getViewState();
 		if (type === view) return;
 
 		// these functions will actually change the view mode:
 		switch (view) {
 			case VIEW_TYPE_TLDRAW:
-				await this.setTldrawView(leaf)
+				await this.setTldrawView(leaf, eState)
 				break;
 			case VIEW_TYPE_TLDRAW_READ_ONLY:
-				await this.setTldrawViewPreview(leaf)
+				await this.setTldrawViewPreview(leaf, eState)
 				break;
 			default:
 				console.warn('Uknown tldraw plugin view: ', view)
-				await this.setMarkdownView(leaf);
+				await this.setMarkdownView(leaf, eState);
 		}
 	}
 
@@ -491,7 +492,9 @@ export default class TldrawPlugin extends Plugin {
 		});
 	};
 
-	public openTldrFile = async (file: TFile, location: PaneTarget, viewType: ViewType = VIEW_TYPE_TLDRAW) => {
+	public openTldrFile = async (file: TFile, location: PaneTarget, viewType: ViewType = VIEW_TYPE_TLDRAW,
+		openState?: OpenViewState,
+	) => {
 		let leaf: WorkspaceLeaf;
 
 		if (location === "current-tab")
@@ -504,8 +507,8 @@ export default class TldrawPlugin extends Plugin {
 			leaf = this.app.workspace.getLeaf("split");
 		else leaf = this.app.workspace.getLeaf(false);
 
-		await leaf.openFile(file);
-		await this.updateViewMode(viewType, leaf);
+		await leaf.openFile(file, openState);
+		await this.updateViewMode(viewType, leaf, openState?.eState);
 	};
 
 	/**
@@ -530,7 +533,7 @@ export default class TldrawPlugin extends Plugin {
 
 	private switchToTldrawViewAfterLoad() {
 		this.app.workspace.onLayoutReady(() => {
-			for (let leaf of this.app.workspace.getLeavesOfType("markdown")) {
+			for (const leaf of this.app.workspace.getLeavesOfType("markdown")) {
 				if (
 					leaf.view instanceof MarkdownView &&
 					leaf.view.file &&

@@ -1,17 +1,18 @@
 import TldrawPlugin from "src/main";
 import { createEmbedMenu, TldrAppControllerForMenu } from "../menu/create-embed-menu";
-import { TFile } from "obsidian";
 
 export function showEmbedContextMenu(ev: MouseEvent | TouchEvent, {
-    tFile, plugin, controller, focusContainer,
+    title, controller, focusContainer,
+    openFile,
 }: {
-    tFile: TFile,
+    title: string,
     plugin: TldrawPlugin,
     controller: TldrAppControllerForMenu,
     focusContainer: HTMLElement,
+    openFile: Parameters<typeof createEmbedMenu>[0]['openFile']
 }) {
     createEmbedMenu({
-        tFile, plugin,
+        title,
         controller,
         selectEmbedLinkText: (ev) => {
             focusContainer.dispatchEvent(new MouseEvent('click', {
@@ -20,7 +21,8 @@ export function showEmbedContextMenu(ev: MouseEvent | TouchEvent, {
                 clientX: ev.clientX,
                 clientY: ev.clientY,
             }))
-        }
+        },
+        openFile,
     }).showAtMouseEvent(ev.instanceOf(MouseEvent) ? ev :
         // simulate click when it ev is undefined, e.g. MouseEvent not given because it was a touch event.
         new MouseEvent('click', {
