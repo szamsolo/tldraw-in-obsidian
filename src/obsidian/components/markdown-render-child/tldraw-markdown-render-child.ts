@@ -6,7 +6,7 @@ import TldrawApp from "src/components/TldrawApp";
 import TldrawPlugin from "src/main";
 import BoundsSelectorTool from "src/tldraw/tools/bounds-selector-tool";
 import { ImageViewModeOptions, ViewMode } from "../../helpers/TldrawAppEmbedViewController";
-import { BoxLike, Editor, pageIdValidator, TLPageId } from "tldraw";
+import { BoxLike, createDeepLinkString, Editor, TLDeepLink, TLPageId } from "tldraw";
 import TLDataDocumentStoreManager from "../../plugin/TLDataDocumentStoreManager";
 import { showEmbedContextMenu } from "../../helpers/show-embed-context-menu";
 import { ComponentProps } from "react";
@@ -17,16 +17,12 @@ import TldrawViewComponent from "../tldraw-view-component";
 import PreviewImageImpl from "./preview-image";
 import SnapshotPreviewSyncStoreImpl from "./snapshot-preview-store";
 import { MarkdownEmbed } from "../../markdown-embed";
+import deepLinkListener from "./deep-link-listener";
+import toPageId from "src/tldraw/helpers/string-to-page-id";
 
 const boundsSelectorToolIconName = `tool-${BoundsSelectorTool.id}`;
 
 type DocumentStoreInstance = ReturnType<TLDataDocumentStoreManager['register']>;
-
-function _pageId(page?: string) {
-    return page === undefined || page.length === 0 ? undefined : (
-        !pageIdValidator.isValid(`page:${page}`) ? undefined : `page:${page}` as TLPageId
-    )
-}
 
 type EmbedPageOptions = Pick<ImageViewModeOptions, 'bounds'>;
 
@@ -36,6 +32,7 @@ export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
     #workspaceLeafDeferrables = new Set<() => void>();
     #workspaceLeafObserverDisconnect?: () => void;
     #embedValuesObserverDisconnect?: () => void;
+    #unregisterDeepLinkListener?: () => void;
     #storeInstance?: DocumentStoreInstance;
     #currentMenu?: Menu;
     #viewContentEl?: HTMLElement;
@@ -59,7 +56,7 @@ export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
     ) {
         super(embed.containerEl);
         const initialEmbedValues = embed.parseEmbedValues(plugin.settings.embeds.showBg);
-        const pageId = _pageId(initialEmbedValues.page);
+        const pageId = toPageId(initialEmbedValues.page);
         if (pageId) {
             this.#embedPagesOptions = {
                 [pageId]: { bounds: initialEmbedValues.bounds }
@@ -198,6 +195,8 @@ export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
                         editor.setCurrentPage(this.#currentPage);
                     }
                     zoomToEmbedPageBounds(editor);
+                    // Listen for changes to the deep link
+                    this.#registerDeepLinkListener(editor);
                 },
                 onUiEvent: (editor, name, data) => {
                     if (!editor || name !== 'change-page') return;
@@ -206,6 +205,18 @@ export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
             },
             targetDocument: this.containerEl.ownerDocument,
         };
+    }
+
+    #registerDeepLinkListener(editor: Editor) {
+        this.#unregisterDeepLinkListener?.();
+        const unregister = this.#unregisterDeepLinkListener = editor.registerDeepLinkListener(
+            deepLinkListener(this.plugin, this.context.tFile, this.embed)
+        );
+        this.register(() => {
+            if (this.#unregisterDeepLinkListener === unregister) {
+                this.#unregisterDeepLinkListener();
+            }
+        });
     }
 
     /**
@@ -226,6 +237,7 @@ export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
     #createViewContentEl() {
         return createTldrawEmbedView(this.containerEl, {
             file: this.context.tFile,
+            getCurrentDeepLink: () => this.embed.getDeepLink(),
             controller: {
                 getViewOptions: () => this.#previewImage.options,
                 getViewMode: () => this.#viewMode,
@@ -303,7 +315,7 @@ export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
             this.#previewImage.setSize(imageSize);
         }
 
-        const pageId = _pageId(page);
+        const pageId = toPageId(page);
         if (pageId) {
             const page = this.#storeInstance?.documentStore.store.query.records('page').get().find((value) => (
                 value.id === pageId
@@ -549,13 +561,15 @@ export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
 }
 
 function createTldrawEmbedView(internalEmbedDiv: HTMLElement, {
-    file, plugin, controller, showBgDots, setHeight
+    file, plugin, controller, showBgDots, setHeight,
+    getCurrentDeepLink,
 }: {
     file: TFile,
     plugin: TldrawPlugin,
     controller: TldrAppControllerForMenu,
     setHeight: (height: number, preview: boolean) => void,
     showBgDots: boolean,
+    getCurrentDeepLink: () => TLDeepLink | undefined,
 }) {
     const tldrawEmbedView = internalEmbedDiv.createDiv({ cls: 'ptl-markdown-embed' },);
 
@@ -576,19 +590,36 @@ function createTldrawEmbedView(internalEmbedDiv: HTMLElement, {
         }
     })
 
+    const openTldrawFile: Parameters<typeof showEmbedContextMenu>[1]['openFile'] = (location, viewType) => {
+        const initialTldrawDeepLink = getCurrentDeepLink();
+        plugin.openTldrFile(file, location, viewType, !initialTldrawDeepLink
+            ? undefined
+            : {
+                eState: {
+                    tldrawDeepLink: createDeepLinkString(initialTldrawDeepLink),
+                }
+            }
+        );
+    }
+
     tldrawEmbedViewContent.addEventListener('dblclick', (ev) => {
         if (controller.getViewMode() === 'image') {
-            plugin.openTldrFile(file, 'new-tab', 'tldraw-view');
+            openTldrawFile('new-tab', 'tldraw-view');
             ev.stopPropagation();
         }
     })
 
+    const showMenu = (event: MouseEvent | TouchEvent, focusContainer: HTMLElement) => {
+        showEmbedContextMenu(event, {
+            plugin, controller, focusContainer,
+            title: file.name,
+            openFile: openTldrawFile
+        });
+    }
+
     tldrawEmbedViewContent.addEventListener('contextmenu', (ev) => {
         if (ev.button === 2) {
-            showEmbedContextMenu(ev, {
-                plugin, controller, focusContainer: internalEmbedDiv,
-                tFile: file
-            })
+            showMenu(ev, internalEmbedDiv);
         }
         // Prevent default: On mobile without this the embed image view will zoom in, which is unwanted behavior when showing the context menu.
         ev.preventDefault()
@@ -599,10 +630,7 @@ function createTldrawEmbedView(internalEmbedDiv: HTMLElement, {
         let longPressTimer: Timeout | undefined;
         tldrawEmbedViewContent.addEventListener('touchstart', (ev) => {
             clearTimeout(longPressTimer)
-            longPressTimer = setTimeout(() => showEmbedContextMenu(ev, {
-                plugin, controller, focusContainer: tldrawEmbedView,
-                tFile: file
-            }), 500)
+            longPressTimer = setTimeout(() => showMenu(ev, tldrawEmbedView), 500)
         }, { passive: true })
 
         tldrawEmbedViewContent.addEventListener('touchmove', (ev) => {

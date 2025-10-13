@@ -121,7 +121,7 @@ type EmbedUpdate = Partial<{
     size: { width: number, height: number }
 }>;
 
-function updateEmbedAtInternalLink(editor: Editor, token: InternalLinkToken, update: EmbedUpdate) {
+export function updateEmbedLinkText(token: Pick<InternalLinkToken, 'displayText' | 'text'>, update: EmbedUpdate) {
     const { size, pageBounds } = update;
     const [altText, ...rest] = token.displayText.split('|');
     const restButSize = rest.splice(0, rest.length - 1);
@@ -152,7 +152,7 @@ function updateEmbedAtInternalLink(editor: Editor, token: InternalLinkToken, upd
         }
     )();
 
-    editor.replaceRange(
+    return (
         [
             token.text,
             (() => {
@@ -172,7 +172,15 @@ function updateEmbedAtInternalLink(editor: Editor, token: InternalLinkToken, upd
                     : typeof maybeSize === 'string' ? [maybeSize]
                         : [formatDisplaySize(maybeSize)]
             )
-        ].join('|'),
+        ].join('|')
+    )
+}
+
+/**
+ * Updates the internal link within the editor.
+ */
+function updateEmbedAtInternalLink(editor: Editor, token: InternalLinkToken, update: EmbedUpdate) {
+    editor.replaceRange(updateEmbedLinkText(token, update),
         token.start,
         token.end
     );

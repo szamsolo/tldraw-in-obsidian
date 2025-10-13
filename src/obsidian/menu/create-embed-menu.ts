@@ -1,7 +1,6 @@
-import { Menu, MenuItem, TFile } from "obsidian";
+import { Menu, MenuItem } from "obsidian";
 import { TldrawAppViewModeController } from "../helpers/TldrawAppEmbedViewController";
-import { MARKDOWN_ICON_NAME } from "src/utils/constants";
-import TldrawPlugin from "src/main";
+import { MARKDOWN_ICON_NAME, PaneTarget, ViewType } from "src/utils/constants";
 import { pluginMenuLabel } from ".";
 import { BoxLike } from "tldraw";
 
@@ -76,15 +75,18 @@ class _Menu extends Menu {
 }
 
 export function createEmbedMenu({
-    controller, plugin, selectEmbedLinkText, tFile
+    controller, selectEmbedLinkText,
+    title,
+    openFile,
 }: {
-    controller: TldrAppControllerForMenu, plugin: TldrawPlugin,
+    controller: TldrAppControllerForMenu,
     selectEmbedLinkText: (ev: MouseEvent) => void,
-    tFile: TFile,
+    title: string,
+    openFile: (location: PaneTarget, viewType: ViewType) => void
 }) {
     const bounds = controller.getViewOptions().bounds;
     return new _Menu(controller).addItem((item) => pluginMenuLabel(item, {
-        title: tFile.name
+        title
     })).addItem((item) => (
         background(item, controller).onClick(() => {
             controller.toggleBackground();
@@ -103,15 +105,15 @@ export function createEmbedMenu({
             .onClick(selectEmbedLinkText)
     )).addSeparator().addItem((item) => (
         openMdNewTab(item).onClick(() => {
-            plugin.openTldrFile(tFile, 'new-tab', 'markdown')
+            openFile('new-tab', 'markdown')
         })
     )).addItem((item) => (
         editNewTab(item).onClick(() => {
-            plugin.openTldrFile(tFile, 'new-tab', 'tldraw-view');
+            openFile('new-tab', 'tldraw-view');
         })
     )).addItem((item) => (
         readOnlyNewTab(item).onClick(() => (
-            plugin.openTldrFile(tFile, 'new-tab', 'tldraw-read-only')
+            openFile('new-tab', 'tldraw-read-only')
         ))
     )).addSeparator().addItem((item) => (
         item.setIsLabel(true)
