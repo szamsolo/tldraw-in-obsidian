@@ -64,6 +64,7 @@ import { createEmbedTldraw } from "./obsidian/components/markdown-render-child";
 
 @pluginBuild
 export default class TldrawPlugin extends Plugin {
+	#instance?: TldrawPlugin;
 	// status bar stuff:
 	statusBarRoot: HTMLElement;
 	statusBarViewModeReactRoot: Root;
@@ -82,7 +83,14 @@ export default class TldrawPlugin extends Plugin {
 	embedBoundsSelectorIcon: string;
 	settings: TldrawPluginSettings;
 
+	get instance() {
+		return this.#instance ?? (() => {
+			throw new Error('Plugin not loaded')
+		})();
+	}
+
 	async onload() {
+		this.#instance = this;
 		this.registerView(
 			VIEW_TYPE_TLDRAW,
 			(leaf) => new TldrawView(leaf, this)
@@ -160,35 +168,35 @@ export default class TldrawPlugin extends Plugin {
 		this.unsubscribeToViewModeState();
 		this.statusBarViewModeReactRoot.unmount();
 		URL.revokeObjectURL(this.embedBoundsSelectorIcon);
+		this.#instance = undefined;
 	}
 
 	private registerEvents() {
-		const self = this;
+		const plugin = this.instance;
 		// Monkey patch WorkspaceLeaf to open Tldraw drawings with TldrawView by default
 		// inspired from https://github.com/zsviczian/obsidian-excalidraw-plugin/blob/f79181c76a9d6ef9f17ecdfd054aa0e6d7564d1f/src/main.ts#L1649C9-L1649C9
 		this.register(
 			around(WorkspaceLeaf.prototype, {
 				setViewState(next) {
-					return function (state: ViewState, ...rest: any[]) {
-						const leaf: WorkspaceLeaf = this;
+					return function (this: WorkspaceLeaf, state: ViewState, ...rest: unknown[]) {
 						const rstate = state.state; // "real" state
 						const filePath = rstate?.file as string;
 						const viewType = state.type;
 						const validViewType = isValidViewType(viewType);
 
-						if (self.settings.workspace.switchMarkdownView && validViewType && filePath) {
+						if (plugin.settings.workspace.switchMarkdownView && validViewType && filePath) {
 							const matr = !!rstate.manuallyTriggered;
 
-							const file = self.app.vault.getAbstractFileByPath(
+							const file = plugin.app.vault.getAbstractFileByPath(
 								filePath
 							);
 
-							if (file instanceof TFile && self.hasTldrawFrontMatterKey(file)) {
-								const view = matr ? viewType : self.settings.workspace.tldrMarkdownViewType;
+							if (file instanceof TFile && plugin.hasTldrawFrontMatterKey(file)) {
+								const view = matr ? viewType : plugin.settings.workspace.tldrMarkdownViewType;
 								const newState = { ...state, type: view };
 
-								self.setLeafFileViewMode(view, leaf, file);
-								self.updateStatusBarViewMode(view);
+								plugin.setLeafFileViewMode(view, this, file);
+								plugin.updateStatusBarViewMode(view);
 
 								return next.apply(this, [newState, ...rest]);
 							}
