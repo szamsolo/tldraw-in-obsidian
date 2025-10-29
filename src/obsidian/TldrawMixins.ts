@@ -5,6 +5,7 @@ import { MARKDOWN_ICON_NAME, VIEW_TYPE_MARKDOWN } from "src/utils/constants";
 import { createRootAndRenderTldrawApp, TldrawAppProps, TldrawAppStoreProps } from "src/components/TldrawApp";
 import TldrawAssetsModal from "./modal/TldrawAssetsModal";
 import { parseDeepLinkString, TLDeepLink } from "tldraw";
+import InFrontOfTheCanvas from "src/components/InFrontOfTheCanvas";
 
 /**
  * Implements overrides for {@linkcode FileView.onload} and {@linkcode FileView.onunload}
@@ -87,6 +88,9 @@ export function TldrawLoadableMixin<T extends abstract new (...args: any[]) => F
 
         protected getTldrawOptions(): TldrawAppProps['options'] {
             return {
+                components: {
+                    InFrontOfTheCanvas,
+                },
                 onEditorMount: (editor) => {
                     const viewState = this.getEphemeralState();
                     console.log(this.#deepLink)

@@ -2,8 +2,10 @@ import { CachedMetadata, Notice, TFile } from "obsidian";
 import TldrawPlugin from "src/main";
 import { TldrawFileListener } from "src/obsidian/plugin/TldrawFileListenerMap";
 import { createAttachmentFilepath } from "src/utils/utils";
-import { TLAsset, TLAssetContext, TLAssetStore } from "tldraw";
+import { DEFAULT_SUPPORTED_IMAGE_TYPES, TLAsset, TLAssetContext, TLAssetStore, TLImageAsset } from "tldraw";
 import { TldrawStoreIndexedDB } from "./indexeddb-store";
+import { vaultFileToBlob } from "src/obsidian/helpers/vault";
+import { createImageAsset } from "./helpers/create-asset";
 
 const blockRefAssetPrefix = 'obsidian.blockref.';
 type BlockRefAssetId = `${typeof blockRefAssetPrefix}${string}`;
@@ -72,6 +74,23 @@ export class ObsidianMarkdownFileTLAssetStoreProxy {
             await file.arrayBuffer()
         );
 
+        const assetSrc = await this.createLinkWithBlockRef(assetFile, blockRefId);
+
+        this.cacheAsset(assetSrc, file)
+
+        return assetSrc;
+    }
+
+    /**
+     * Persist the asset file as a link within the markdown file and attach a block reference to it.
+     * @param assetFile The file in the vault to link as an asset
+     * @param blockRefId The reference id for the asset.
+     * @returns 
+     */
+    async createLinkWithBlockRef(assetFile: TFile, blockRefId: string) {
+        if (this.cachedMetadata.blocks?.[blockRefId] !== undefined) {
+            throw new Error('Block ref already exists')
+        }
         const internalLink = this.plugin.app.fileManager.generateMarkdownLink(assetFile, this.tFile.path);
         const linkBlock = `${internalLink}\n^${blockRefId}`;
         const assetSrc = `${blockRefAssetPrefix}${blockRefId}` as const;
@@ -87,12 +106,16 @@ export class ObsidianMarkdownFileTLAssetStoreProxy {
             return contents;
         });
 
-        const assetDataUri = URL.createObjectURL(file);
-        this.#resolvedAssetDataCache.set(assetSrc, assetDataUri);
         return assetSrc;
     }
 
-    async getAsset(blockRefAssetId: BlockRefAssetId): Promise<ArrayBuffer | null> {
+    private cacheAsset(assetSrc: BlockRefAssetId, blob: Blob) {
+        const assetDataUri = URL.createObjectURL(blob);
+        this.#resolvedAssetDataCache.set(assetSrc, assetDataUri);
+        return assetDataUri;
+    }
+
+    async getAsset(blockRefAssetId: BlockRefAssetId): Promise<Blob | null> {
         const blocks = this.cachedMetadata.blocks;
         if (!blocks) return null;
 
@@ -120,7 +143,7 @@ export class ObsidianMarkdownFileTLAssetStoreProxy {
             return null;
         }
 
-        return this.plugin.app.vault.readBinary(assetFile);
+        return vaultFileToBlob(assetFile);
     }
 
     /**
@@ -132,22 +155,77 @@ export class ObsidianMarkdownFileTLAssetStoreProxy {
         if (cachedAsset) return cachedAsset;
         const assetData = await this.getAsset(blockRefAssetId);
         if (!assetData) return null;
-        const assetFileBlob = new Blob(
-            [assetData],
-            {
-                type: assetData.slice(0, 4).toString() === '<svg'
-                    ? 'image/svg+xml' : undefined
-            }
+        return this.cacheAsset(
+            blockRefAssetId,
+            assetData,
         );
-        const assetUri = URL.createObjectURL(assetFileBlob);
-        this.#resolvedAssetDataCache.set(blockRefAssetId, assetUri);
-        return assetUri;
     }
 
     async getAll(): Promise<BlockRefAssetId[]> {
         return Object.values(this.cachedMetadata.blocks ?? {}).map(
             (e) => `${blockRefAssetPrefix}${e.id}` as const
         );
+    }
+
+    async createImageAsset(assetFile: TFile, {
+        blockRefId = window.crypto.randomUUID(),
+        immediatelyCache = false,
+    }: {
+        blockRefId?: string,
+        /**
+         * Setting to `true` will essentially make the asset data available without having to refer to the link referenced by a block ref.
+         * Skips having to read the file metadata to locate the asset with via the block ref.
+         * 
+         * @default false
+         */
+        immediatelyCache?: boolean,
+    } = {}): Promise<TLImageAsset> {
+        const assetBlob = await vaultFileToBlob(assetFile);
+        
+        if (!(DEFAULT_SUPPORTED_IMAGE_TYPES as readonly string[]).includes(assetBlob.type)) {
+            throw new Error(`Expected an image mime-type, got ${assetBlob.type}`, {
+                cause: {
+                    message: 'The provided file is not an image type.',
+                    assetFile,
+                    type: assetBlob.type,
+                }
+            });
+        }
+
+        const assetSrc = await this.createLinkWithBlockRef(assetFile, blockRefId);
+
+        /**
+         * Should be revoked if not added to the cache.
+         */
+        const assetUri = immediatelyCache
+            ? this.cacheAsset(assetSrc, assetBlob)
+            : URL.createObjectURL(assetBlob);
+
+        try {
+            const { width, height } = await (async () => {
+                const image = new Image();
+                image.src = assetUri;
+                await image.decode()
+                return image;
+            })();
+
+            return createImageAsset({
+                props: {
+                    isAnimated: false,
+                    fileSize: assetBlob.size,
+                    mimeType: assetBlob.type,
+                    name: assetFile.name,
+                    src: `asset:${assetSrc}`,
+                    w: width,
+                    h: height,
+                },
+            });
+        } finally {
+            if(!immediatelyCache) {
+                // We only needed the object url for getting the width and height.
+                URL.revokeObjectURL(assetUri);
+            }
+        }
     }
 }
 
@@ -176,7 +254,7 @@ export class ObsidianTLAssetStore implements TLAssetStore {
          * The persistence key which references a {@linkcode TLAssetStore} in the {@linkcode IDBDatabase}
          */
         public readonly persistenceKey: string,
-        private readonly proxy: ObsidianMarkdownFileTLAssetStoreProxy,
+        public readonly proxy: ObsidianMarkdownFileTLAssetStoreProxy,
     ) {
         this.upload = this.upload.bind(this);
         this.resolve = this.resolve.bind(this);

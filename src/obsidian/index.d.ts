@@ -103,4 +103,22 @@ declare module "obsidian" {
     interface Component {
         _loaded: boolean;
     }
+
+    interface AbstractInputSuggest<T> {
+        suggestEl: HTMLDivElement;
+        textInputEl: HTMLInputElement | HTMLDivElement;
+        /**
+         * Calls the {@linkcode renderSuggestion} function for each value.
+         * 
+         * Not defined by Obsidian APIs, but exists regardless.
+         */
+        showSuggestions(values: T[]): void;
+
+        /**
+         * Repositions the popover underneath the `textInputEl` from the {@linkcode AbstractInputSuggest['constructor']} call.
+         * 
+         * Not defined by Obsidian APIs, but exists regardless.
+         */
+        autoReposition(): void;
+    }
 }

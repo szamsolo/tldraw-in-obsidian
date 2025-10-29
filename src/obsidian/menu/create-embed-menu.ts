@@ -3,12 +3,11 @@ import { TldrawAppViewModeController } from "../helpers/TldrawAppEmbedViewContro
 import { MARKDOWN_ICON_NAME, PaneTarget, ViewType } from "src/utils/constants";
 import { pluginMenuLabel } from ".";
 import { BoxLike } from "tldraw";
+import { PTLEditorBlockBlur } from "src/utils/dom-attributes";
 
 export type TldrAppControllerForMenu = Pick<
     TldrawAppViewModeController, 'getViewMode' | 'toggleInteractive' | 'toggleBackground' | 'getViewOptions'
 > & {
-    setCurrentMenu: (menu: Menu) => void,
-    unsetMenu: (menu: Menu) => void,
     enableEditing: () => void,
 };
 
@@ -58,19 +57,11 @@ function boundsText(bounds: BoxLike) {
     return `size=${w.toFixed(0)},${h.toFixed(0)};pos=${x.toFixed(0)},${y.toFixed(0)}`;
 }
 
-class _Menu extends Menu {
-    constructor(
-        public readonly controller: TldrAppControllerForMenu,
-    ) { super(); }
-
-    onload(): void {
-        super.onload();
-        this.controller.setCurrentMenu(this);
-    }
-
-    onunload(): void {
-        super.onunload();
-        this.controller.unsetMenu(this);
+class EmbedTldrawMenu extends Menu {
+    constructor() {
+        super();
+        // Clicking within the menu element shouldn't blur the editor.
+        PTLEditorBlockBlur.blockBlurOnElement(this.dom);
     }
 }
 
@@ -85,7 +76,7 @@ export function createEmbedMenu({
     openFile: (location: PaneTarget, viewType: ViewType) => void
 }) {
     const bounds = controller.getViewOptions().bounds;
-    return new _Menu(controller).addItem((item) => pluginMenuLabel(item, {
+    return new EmbedTldrawMenu().addItem((item) => pluginMenuLabel(item, {
         title
     })).addItem((item) => (
         background(item, controller).onClick(() => {

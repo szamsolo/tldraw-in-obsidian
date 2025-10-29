@@ -1,4 +1,4 @@
-import { MarkdownRenderChild, Menu, TFile } from "obsidian";
+import { MarkdownRenderChild, TFile } from "obsidian";
 import BoundsTool from "src/components/BoundsTool";
 import BoundsToolSelectedShapeIndicator from "src/components/BoundsToolSelectedShapesIndicator";
 import EmbedTldrawToolBar from "src/components/EmbedTldrawToolBar";
@@ -9,7 +9,7 @@ import { ImageViewModeOptions, ViewMode } from "../../helpers/TldrawAppEmbedView
 import { BoxLike, createDeepLinkString, Editor, TLDeepLink, TLPageId } from "tldraw";
 import TLDataDocumentStoreManager from "../../plugin/TLDataDocumentStoreManager";
 import { showEmbedContextMenu } from "../../helpers/show-embed-context-menu";
-import { ComponentProps } from "react";
+import { ComponentProps, createElement } from "react";
 import { TldrAppControllerForMenu } from "../../menu/create-embed-menu";
 import { isObsidianThemeDark } from "src/utils/utils";
 import { logClass } from "src/utils/logging";
@@ -19,6 +19,7 @@ import SnapshotPreviewSyncStoreImpl from "./snapshot-preview-store";
 import { MarkdownEmbed } from "../../markdown-embed";
 import deepLinkListener from "./deep-link-listener";
 import toPageId from "src/tldraw/helpers/string-to-page-id";
+import InFrontOfTheCanvas from "src/components/InFrontOfTheCanvas";
 
 const boundsSelectorToolIconName = `tool-${BoundsSelectorTool.id}`;
 
@@ -34,7 +35,6 @@ export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
     #embedValuesObserverDisconnect?: () => void;
     #unregisterDeepLinkListener?: () => void;
     #storeInstance?: DocumentStoreInstance;
-    #currentMenu?: Menu;
     #viewContentEl?: HTMLElement;
     #viewMode: ViewMode = 'image';
     #viewComponent?: TldrawViewComponent;
@@ -130,13 +130,16 @@ export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
             options: {
                 // assetStore: documentStore.store.props.assets,
                 onClickAwayBlur: (ev) => {
-                    if (this.#currentMenu && this.#currentMenu.dom.contains(ev.targetNode)) return false;
                     Promise.resolve().then(() => this.setViewMode('image'));
                     return true;
                 },
                 isReadonly: this.#storeInstance?.isSynchronizingToMain() !== true,
                 components: {
-                    InFrontOfTheCanvas: BoundsTool,
+                    InFrontOfTheCanvas: () => (
+                        createElement(InFrontOfTheCanvas, {
+                            children: createElement(BoundsTool)
+                        })
+                    ),
                     OnTheCanvas: BoundsToolSelectedShapeIndicator,
                     Toolbar: EmbedTldrawToolBar,
                 },
@@ -252,15 +255,6 @@ export class TldrawMarkdownRenderChild extends MarkdownRenderChild {
                         this.setViewMode('image');
                     } else {
                         this.setViewMode('interactive');
-                    }
-                },
-                setCurrentMenu: (menu) => {
-                    this.#currentMenu?.hide();
-                    this.#currentMenu = menu;
-                },
-                unsetMenu: (menu) => {
-                    if (menu === this.#currentMenu) {
-                        this.#currentMenu = undefined;
                     }
                 },
                 enableEditing: () => {
