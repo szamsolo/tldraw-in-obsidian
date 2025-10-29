@@ -1,6 +1,6 @@
 {
 	"name": "tldraw-in-obsidian",
-	"version": "1.24.0",
+	"version": "1.25.0",
 	"description": "Integrates Tldraw into Obsidian, allowing users to draw and edit content on a virtual whiteboard.",
 	"main": "main.js",
 	"scripts": {
@@ -30,7 +30,7 @@
 		"@typescript-eslint/parser": "7.12.0",
 		"builtin-modules": "3.3.0",
 		"esbuild": "^0.23.1",
-		"obsidian": "latest",
+		"obsidian": "^1.10.0",
 		"patch-package": "^8.0.0",
 		"tslib": "2.6.3",
 		"typescript": "^5.5.4"

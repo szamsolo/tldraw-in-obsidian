@@ -27,6 +27,8 @@ import PluginKeyboardShortcutsDialog from "./PluginKeyboardShortcutsDialog";
 import PluginQuickActions from "./PluginQuickActions";
 import { lockZoomIcon } from "src/assets/data-icons";
 import { isObsidianThemeDark } from "src/utils/utils";
+import { TldrawInObsidianPluginProvider } from "src/contexts/plugin";
+import { PTLEditorBlockBlur } from "src/utils/dom-attributes";
 
 type TldrawAppOptions = {
 	iconAssetUrls?: TLUiAssetUrlOverrides['icons'],
@@ -205,8 +207,12 @@ const TldrawApp = ({ plugin, store,
 	const editorContainerRef = useClickAwayListener<HTMLDivElement>({
 		enableClickAwayListener: isFocused,
 		handler(ev) {
+			// We allow event targets to specify if they should block the editor from being blurred.
+			if(PTLEditorBlockBlur.shouldEventBlockBlur(ev)) return;
+
 			const blurEditor = onClickAwayBlur?.(ev);
 			if (blurEditor !== undefined && !blurEditor) return;
+
 			editor?.blur();
 			setIsFocused(false);
 			const { currTldrawEditor } = plugin;
@@ -272,12 +278,14 @@ export const createRootAndRenderTldrawApp = (
 ) => {
 	const root = createRoot(node);
 	root.render(
-		<TldrawApp
-			plugin={plugin}
-			store={options.store}
-			options={options.app ?? {}}
-			targetDocument={node.ownerDocument}
-		/>
+		<TldrawInObsidianPluginProvider plugin={plugin}>
+			<TldrawApp
+				plugin={plugin}
+				store={options.store}
+				options={options.app ?? {}}
+				targetDocument={node.ownerDocument}
+			/>
+		</TldrawInObsidianPluginProvider>
 	);
 
 	return root;

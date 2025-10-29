@@ -185,7 +185,7 @@ export default class TldrawPlugin extends Plugin {
 						const validViewType = isValidViewType(viewType);
 
 						if (plugin.settings.workspace.switchMarkdownView && validViewType && filePath) {
-							const matr = !!rstate.manuallyTriggered;
+							const matr = Boolean(rstate?.manuallyTriggered);
 
 							const file = plugin.app.vault.getAbstractFileByPath(
 								filePath
@@ -289,8 +289,10 @@ export default class TldrawPlugin extends Plugin {
 
 				// more guard clause:
 				if (!validViewType) return;
-				const fileFromState = leafViewState.state.file as string;
+				const fileFromState = leafViewState.state?.file;
 				const file = this.app.workspace.getActiveFile();
+
+				if(typeof fileFromState !== 'string') return;
 
 				// even more guard clauses:
 				if (!file || !fileFromState) return;
