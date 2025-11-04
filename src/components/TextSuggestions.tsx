@@ -249,6 +249,11 @@ class TldrawTipTapInputSuggest extends AbstractInputSuggest<InputSuggestionValue
         super.showSuggestions(values);
         this.#onRenderedCb?.();
     }
+
+    override autoReposition(): void {
+        if(!this.lastRect) return;
+        super.autoReposition();
+    }
 }
 
 export default TextSuggestions;
