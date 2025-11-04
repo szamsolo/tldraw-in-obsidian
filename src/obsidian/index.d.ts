@@ -105,6 +105,7 @@ declare module "obsidian" {
     }
 
     interface AbstractInputSuggest<T> {
+        lastRect?: DOMRect;
         suggestEl: HTMLDivElement;
         textInputEl: HTMLInputElement | HTMLDivElement;
         /**
