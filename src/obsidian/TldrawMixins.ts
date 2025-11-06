@@ -30,7 +30,7 @@ export function TldrawLoadableMixin<T extends abstract new (...args: any[]) => F
         #unregisterViewAssetsActionCallback?: () => void;
         #unregisterOnWindowMigrated?: () => void;
 
-        protected get tldrawContainer() { return this.containerEl.children[1]; }
+        protected get tldrawContainer() { return this.contentEl; }
 
         /**
          * Adds the entry point `tldraw-view-content` for the {@linkcode reactRoot},
