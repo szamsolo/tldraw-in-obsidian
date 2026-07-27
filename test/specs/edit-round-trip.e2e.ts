@@ -1,11 +1,12 @@
 import { browser, expect } from '@wdio/globals'
 
-const CURRENT_SCHEMA_FIXTURE = 'current-schema.tldr'
-
 /**
- * Creating and persisting is the part of the plugin the other specs don't touch: they only ever
- * open a file that was already on disk. This draws a shape, waits for the debounced save, and
- * reopens the file from scratch, so a break anywhere between the editor and the vault shows up.
+ * Creating and persisting is the part of the plugin that opening a file doesn't touch. This draws a
+ * shape, waits for the debounced write, and reopens the drawing from scratch, so a break anywhere
+ * between the editor and the vault shows up.
+ *
+ * It compares file contents rather than parsing them, so it holds whether the drawing is stored as
+ * markdown or as `.tldr`.
  */
 describe('Editing a drawing', () => {
 	before(async () => {
@@ -15,29 +16,13 @@ describe('Editing a drawing', () => {
 	})
 
 	it('writes an edit to disk and reads it back', async () => {
-		const result = await browser.executeObsidian(async ({ app, obsidian }, path) => {
+		const result = await browser.executeObsidian(async ({ app }) => {
 			const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 			const plugin = (app as unknown as { plugins: { plugins: Record<string, any> } }).plugins
 				.plugins.tldraw
 
-			const fixture = app.vault.getAbstractFileByPath(path)
-			if (!(fixture instanceof obsidian.TFile)) {
-				throw new Error(`The fixture "${path}" is missing from the test vault.`)
-			}
-
-			// Work on a copy: this test writes, and the fixture is committed to the repo.
-			const scratchPath = 'round-trip-scratch.tldr'
-			const existing = app.vault.getAbstractFileByPath(scratchPath)
-			if (existing instanceof obsidian.TFile) await app.vault.delete(existing)
-			const file = await app.vault.copy(fixture, scratchPath)
-
-			const countShapes = (contents: string) =>
-				JSON.parse(contents).records.filter((record: any) => record.typeName === 'shape').length
-
-			const shapesOnDiskBefore = countShapes(await app.vault.read(file))
-
-			const leaf = app.workspace.getLeaf('tab')
-			await leaf.openFile(file)
+			// Otherwise creating a drawing opens the destination picker and blocks the test.
+			plugin.settings.fileDestinations.confirmDestination = false
 
 			const waitForEditor = async () => {
 				const deadline = Date.now() + 15_000
@@ -48,8 +33,12 @@ describe('Editing a drawing', () => {
 				throw new Error('The tldraw editor never mounted.')
 			}
 
+			const file = await plugin.createUntitledTldrFile({})
+			const leaf = await plugin.openTldrFile(file, 'new-tab')
+
 			const editor = await waitForEditor()
-			const shapesInEditorBefore = editor.getCurrentPageShapes().length
+			const shapesBefore = editor.getCurrentPageShapes().length
+			const contentsBefore = await app.vault.read(file)
 
 			editor.createShape({
 				type: 'geo',
@@ -57,40 +46,38 @@ describe('Editing a drawing', () => {
 				y: 100,
 				props: { geo: 'rectangle', w: 120, h: 80 },
 			})
-			const shapesInEditorAfter = editor.getCurrentPageShapes().length
+			const shapesAfterEdit = editor.getCurrentPageShapes().length
 
 			// The plugin debounces writes (saveFileDelay, 0.5s by default), so poll the file rather
 			// than assuming a fixed delay.
 			const saveDeadline = Date.now() + 15_000
-			let shapesOnDiskAfter = shapesOnDiskBefore
+			let contentsAfter = contentsBefore
 			while (Date.now() < saveDeadline) {
-				shapesOnDiskAfter = countShapes(await app.vault.read(file))
-				if (shapesOnDiskAfter !== shapesOnDiskBefore) break
+				contentsAfter = await app.vault.read(file)
+				if (contentsAfter !== contentsBefore) break
 				await sleep(200)
 			}
 
 			// Reopen from scratch so the count comes back through a fresh load, not the live store.
 			leaf.detach()
+			plugin.currTldrawEditor = undefined
 			await sleep(500)
-			const reopened = app.workspace.getLeaf('tab')
-			await reopened.openFile(file)
-			const reloadedEditor = await waitForEditor()
-			const shapesAfterReopen = reloadedEditor.getCurrentPageShapes().length
+			await plugin.openTldrFile(file, 'new-tab')
+			const reloaded = await waitForEditor()
+			const shapesAfterReopen = reloaded.getCurrentPageShapes().length
 
-			reopened.detach()
 			await app.vault.delete(file)
 
 			return {
+				shapesBefore,
+				shapesAfterEdit,
 				shapesAfterReopen,
-				shapesInEditorBefore,
-				shapesInEditorAfter,
-				shapesOnDiskBefore,
-				shapesOnDiskAfter,
+				wroteToDisk: contentsAfter !== contentsBefore,
 			}
-		}, CURRENT_SCHEMA_FIXTURE)
+		})
 
-		expect(result.shapesInEditorAfter).toBe(result.shapesInEditorBefore + 1)
-		expect(result.shapesOnDiskAfter).toBe(result.shapesOnDiskBefore + 1)
-		expect(result.shapesAfterReopen).toBe(result.shapesInEditorAfter)
+		expect(result.shapesAfterEdit).toBe(result.shapesBefore + 1)
+		expect(result.wroteToDisk).toBe(true)
+		expect(result.shapesAfterReopen).toBe(result.shapesAfterEdit)
 	})
 })

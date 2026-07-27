@@ -1,12 +1,11 @@
 import { browser, expect } from '@wdio/globals'
 
-const CURRENT_SCHEMA_FIXTURE = 'current-schema.tldr'
-
 /**
  * The canvas background is meant to match Obsidian's own, so a drawing doesn't sit in a differently
- * coloured rectangle. tldraw 5 moved this from a mutable global palette to per-editor themes, and
- * nothing about that migration is visible to the type checker — if the theme update stopped being
- * applied, the canvas would just quietly render tldraw's default colour instead.
+ * coloured rectangle.
+ *
+ * These specs create their own drawing rather than opening a committed fixture, so they don't
+ * depend on the schema version of any file on disk and stay valid across tldraw upgrades.
  */
 describe('Canvas background', () => {
 	before(async () => {
@@ -16,21 +15,23 @@ describe('Canvas background', () => {
 	})
 
 	it('matches the Obsidian theme background', async () => {
-		const result = await browser.executeObsidian(async ({ app, obsidian }, path) => {
-			const file = app.vault.getAbstractFileByPath(path)
-			if (!(file instanceof obsidian.TFile)) {
-				throw new Error(`The fixture "${path}" is missing from the test vault.`)
-			}
+		const result = await browser.executeObsidian(async ({ app }) => {
+			const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+			const plugin = (app as unknown as { plugins: { plugins: Record<string, any> } }).plugins
+				.plugins.tldraw
 
-			const leaf = app.workspace.getLeaf('tab')
-			await leaf.openFile(file)
+			// Otherwise creating a drawing opens the destination picker and blocks the test.
+			plugin.settings.fileDestinations.confirmDestination = false
 
-			const deadline = Date.now() + 10_000
+			const file = await plugin.createUntitledTldrFile({})
+			const leaf = await plugin.openTldrFile(file, 'new-tab')
+
+			const deadline = Date.now() + 15_000
 			let background: HTMLElement | null = null
 			while (Date.now() < deadline) {
 				background = leaf.view.containerEl.querySelector('.tl-background')
-				if (background && getComputedStyle(background).backgroundColor) break
-				await new Promise((resolve) => setTimeout(resolve, 100))
+				if (background) break
+				await sleep(100)
 			}
 			if (!background) throw new Error('The tldraw canvas never rendered.')
 
@@ -45,35 +46,37 @@ describe('Canvas background', () => {
 				return resolved
 			}
 
-			const obsidianBackground = getComputedStyle(document.body)
-				.getPropertyValue('--background-primary')
-				.trim()
-
-			return {
+			const result = {
 				canvas: resolve(getComputedStyle(background).backgroundColor),
-				obsidian: resolve(obsidianBackground),
+				obsidian: resolve(
+					getComputedStyle(document.body).getPropertyValue('--background-primary').trim()
+				),
 			}
-		}, CURRENT_SCHEMA_FIXTURE)
+
+			leaf.detach()
+			await app.vault.delete(file)
+			return result
+		})
 
 		expect(result.canvas).toBe(result.obsidian)
 	})
 
 	it('follows the Obsidian theme when it changes', async () => {
-		const result = await browser.executeObsidian(async ({ app, obsidian }, path) => {
-			const file = app.vault.getAbstractFileByPath(path)
-			if (!(file instanceof obsidian.TFile)) {
-				throw new Error(`The fixture "${path}" is missing from the test vault.`)
-			}
+		const result = await browser.executeObsidian(async ({ app }) => {
+			const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+			const plugin = (app as unknown as { plugins: { plugins: Record<string, any> } }).plugins
+				.plugins.tldraw
+			plugin.settings.fileDestinations.confirmDestination = false
 
-			const leaf = app.workspace.getLeaf('tab')
-			await leaf.openFile(file)
+			const file = await plugin.createUntitledTldrFile({})
+			const leaf = await plugin.openTldrFile(file, 'new-tab')
 
-			const deadline = Date.now() + 10_000
+			const deadline = Date.now() + 15_000
 			let background: HTMLElement | null = null
 			while (Date.now() < deadline) {
 				background = leaf.view.containerEl.querySelector('.tl-background')
 				if (background) break
-				await new Promise((resolve) => setTimeout(resolve, 100))
+				await sleep(100)
 			}
 			if (!background) throw new Error('The tldraw canvas never rendered.')
 
@@ -100,8 +103,7 @@ describe('Canvas background', () => {
 				changeTheme?(theme: string): void
 				vault: { getConfig?(key: string): unknown; setConfig?(key: string, value: unknown): void }
 			}
-			const current = internals.vault.getConfig?.('theme')
-			const next = current === 'obsidian' ? 'moonstone' : 'obsidian'
+			const next = internals.vault.getConfig?.('theme') === 'obsidian' ? 'moonstone' : 'obsidian'
 			if (typeof internals.changeTheme === 'function') {
 				internals.changeTheme(next)
 			} else {
@@ -109,16 +111,18 @@ describe('Canvas background', () => {
 				app.workspace.trigger('css-change')
 			}
 
-			// Wait for Obsidian to repaint and the plugin's reactor to push the new colour through.
 			const settle = Date.now() + 10_000
 			while (Date.now() < settle) {
 				const now = read()
 				if (now.obsidian !== before.obsidian && now.canvas === now.obsidian) break
-				await new Promise((resolve) => setTimeout(resolve, 100))
+				await sleep(100)
 			}
 
-			return { before, after: read(), switchedTo: next }
-		}, CURRENT_SCHEMA_FIXTURE)
+			const after = read()
+			leaf.detach()
+			await app.vault.delete(file)
+			return { before, after }
+		})
 
 		// Guards against the assertion below passing trivially because the theme never actually moved.
 		expect(result.after.obsidian).not.toBe(result.before.obsidian)

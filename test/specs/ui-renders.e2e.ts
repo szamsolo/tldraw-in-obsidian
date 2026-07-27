@@ -1,10 +1,8 @@
 import { $, browser, expect } from '@wdio/globals'
 
-const CURRENT_SCHEMA_FIXTURE = 'current-schema.tldr'
-
 /**
  * The plugin replaces a good deal of tldraw's UI — its own main menu, zoom menu, quick actions and
- * keyboard shortcuts dialog — and restyles tldraw internals by class name. A major SDK bump can
+ * keyboard shortcuts dialog — and restyles tldraw internals by class name. An SDK upgrade can
  * rename or restructure any of that without breaking a single type, so this checks the pieces are
  * actually on screen.
  */
@@ -14,13 +12,14 @@ describe('Plugin UI', () => {
 			plugins: ['tldraw'],
 		})
 
-		await browser.executeObsidian(async ({ app, obsidian }, path) => {
-			const file = app.vault.getAbstractFileByPath(path)
-			if (!(file instanceof obsidian.TFile)) {
-				throw new Error(`The fixture "${path}" is missing from the test vault.`)
-			}
-			await app.workspace.getLeaf('tab').openFile(file)
-		}, CURRENT_SCHEMA_FIXTURE)
+		await browser.executeObsidian(async ({ app }) => {
+			const plugin = (app as unknown as { plugins: { plugins: Record<string, any> } }).plugins
+				.plugins.tldraw
+			// Otherwise creating a drawing opens the destination picker and blocks the test.
+			plugin.settings.fileDestinations.confirmDestination = false
+			const file = await plugin.createUntitledTldrFile({})
+			await plugin.openTldrFile(file, 'new-tab')
+		})
 	})
 
 	it('renders the canvas chrome', async () => {
