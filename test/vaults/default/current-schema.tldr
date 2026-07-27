@@ -1,0 +1,213 @@
+{
+	"tldrawFileFormatVersion": 1,
+	"schema": {
+		"schemaVersion": 2,
+		"sequences": {
+			"com.tldraw.store": 5,
+			"com.tldraw.asset": 1,
+			"com.tldraw.camera": 1,
+			"com.tldraw.document": 2,
+			"com.tldraw.instance": 26,
+			"com.tldraw.instance_page_state": 5,
+			"com.tldraw.page": 1,
+			"com.tldraw.instance_presence": 6,
+			"com.tldraw.pointer": 1,
+			"com.tldraw.shape": 4,
+			"com.tldraw.user": 1,
+			"com.tldraw.asset.image": 6,
+			"com.tldraw.asset.video": 5,
+			"com.tldraw.asset.bookmark": 2,
+			"com.tldraw.shape.group": 0,
+			"com.tldraw.shape.text": 4,
+			"com.tldraw.shape.bookmark": 2,
+			"com.tldraw.shape.draw": 5,
+			"com.tldraw.shape.geo": 11,
+			"com.tldraw.shape.note": 13,
+			"com.tldraw.shape.line": 5,
+			"com.tldraw.shape.frame": 1,
+			"com.tldraw.shape.arrow": 8,
+			"com.tldraw.shape.highlight": 4,
+			"com.tldraw.shape.embed": 4,
+			"com.tldraw.shape.image": 5,
+			"com.tldraw.shape.video": 4,
+			"com.tldraw.binding.arrow": 1
+		}
+	},
+	"records": [
+		{
+			"x": 0,
+			"y": 0,
+			"lastActivityTimestamp": 0,
+			"meta": {},
+			"id": "pointer:pointer",
+			"typeName": "pointer"
+		},
+		{
+			"name": "",
+			"color": "#9D5BD2",
+			"imageUrl": "",
+			"meta": {},
+			"id": "user:60hQGrfbKWK_dsMOi3rM3",
+			"typeName": "user"
+		},
+		{
+			"x": 0,
+			"y": 0,
+			"z": 1,
+			"meta": {},
+			"id": "camera:page:page",
+			"typeName": "camera"
+		},
+		{
+			"editingShapeId": null,
+			"croppingShapeId": null,
+			"selectedShapeIds": [],
+			"hoveredShapeId": null,
+			"erasingShapeIds": [],
+			"hintingShapeIds": [],
+			"focusedGroupId": null,
+			"meta": {},
+			"id": "instance_page_state:page:page",
+			"pageId": "page:page",
+			"typeName": "instance_page_state"
+		},
+		{
+			"name": "",
+			"color": "#EC5E41",
+			"imageUrl": "",
+			"meta": {},
+			"id": "user:Klrgjw6-ohKBhNlSXsbLw",
+			"typeName": "user"
+		},
+		{
+			"x": 385.71612548828125,
+			"y": 221.8294219970703,
+			"rotation": 0,
+			"isLocked": false,
+			"opacity": 1,
+			"meta": {},
+			"id": "shape:B8g2DGB0V1tqtCGkUopau",
+			"type": "draw",
+			"props": {
+				"segments": [
+					{
+						"type": "free",
+						"path": "AAAAAAAAAAAfLXuwAAAKswAAcbUAAK63AADhvQAA7L8AAFfAH6k9wB+8GsCPvAXBmr17w8O+n8L2v4/BhcF2w1zCPcQpwHHAw7+kv4DClMFSwubA9sH2vVLBCr1NwFy718ApvA/BXLykvnG19r2us8O/AAAfvwAAw7wAAKS+AABmwAAAXLxmLqS4ezBSv649179SPuG/1z8uwKRAccAzQoXAyEKuwHZD18H2RWHC/Ua4tlw7j8SJS4+8YUePun1GAACDRAAAvUUAAORGez9qSIpB2EjARSZH/UV9RgVICEYoSMNFoUcaRLNHJkT2R0hESEWzQApE4T1mRdc/KUVmPyFEjzr7Qtc54T24NsM8zTQKO8MxezRmKh81AABINQAA",
+						"dim": 2
+					}
+				],
+				"color": "black",
+				"fill": "none",
+				"dash": "draw",
+				"size": "m",
+				"isComplete": true,
+				"isClosed": false,
+				"isPen": false,
+				"scale": 1,
+				"scaleX": 1,
+				"scaleY": 1
+			},
+			"parentId": "page:page",
+			"index": "a16jr",
+			"typeName": "shape"
+		},
+		{
+			"x": 384.79815673828125,
+			"y": 223.90625,
+			"rotation": 0,
+			"isLocked": false,
+			"opacity": 1,
+			"meta": {},
+			"id": "shape:lYFTlcgUfO12Ftet14pMy",
+			"type": "draw",
+			"props": {
+				"segments": [
+					{
+						"type": "free",
+						"path": "AAAAAAAAAAAfLRSyAACFtwAAe7QAAK6nAABmuAAAFLoAAFK9AADDvAAACrx7Ote/4TzswMMxmrVmRBTGs0C4wGZAPcDDP3u+0kCavtdBrr5hQq6+n0Kkvh9C9rrhQZq5PUIAACRDAAA4RAAA5kIAAJpBAAAUQlI0UkI9Ni5EyEEURB9CuD3DPM0+Hz9IQPtBpD4fQq48Q0KPOOxAzTQuQLg2rkIUNopCAABhQGaugEDDtQpBXL8KQ+HCkkQKwgVElMFxQ6HERUXSxGlFVMTfRDjEmkR7w3ZDQ8JDQgrBBUFSwgBDAMP7Q7i2rjexxg9Fmr+aPwq/Cj8UvgA+4b1SPcO9mjxIvQo7H70UOgq5eziPuI84FLoAOlK4UjgfqXssZqquKx+teywfqXE1AAAKNwAAFDoAACk6AADDPAAAKT4AANJAAAAAPaQ8hUV7OqRBZjZIPJo1SDsUMhQ6FDLhOHExcTHDLcMt",
+						"dim": 2
+					}
+				],
+				"color": "black",
+				"fill": "none",
+				"dash": "draw",
+				"size": "m",
+				"isComplete": true,
+				"isClosed": false,
+				"isPen": false,
+				"scale": 1,
+				"scaleX": 1,
+				"scaleY": 1
+			},
+			"parentId": "page:page",
+			"index": "a2vUJ",
+			"typeName": "shape"
+		},
+		{
+			"meta": {},
+			"id": "page:page",
+			"name": "Page 1",
+			"index": "a1",
+			"typeName": "page"
+		},
+		{
+			"gridSize": 10,
+			"name": "",
+			"meta": {
+				"desktop": {
+					"version": 2,
+					"documentId": "qbfdmbCheBf85vaGyw0Ym",
+					"lastSavedAt": 1785148397145
+				}
+			},
+			"id": "document:document",
+			"typeName": "document"
+		},
+		{
+			"followingUserId": null,
+			"opacityForNextShape": 1,
+			"stylesForNextShape": {},
+			"brush": null,
+			"scribbles": [],
+			"cursor": {
+				"type": "cross",
+				"rotation": 0
+			},
+			"isFocusMode": false,
+			"exportBackground": true,
+			"isDebugMode": false,
+			"isToolLocked": false,
+			"screenBounds": {
+				"x": 0,
+				"y": 0,
+				"w": 852.5,
+				"h": 635.8333129882812
+			},
+			"insets": [
+				false,
+				false,
+				true,
+				false
+			],
+			"zoomBrush": null,
+			"isGridMode": false,
+			"isPenMode": false,
+			"chatMessage": "",
+			"isChatting": false,
+			"highlightedUserIds": [],
+			"isFocused": true,
+			"devicePixelRatio": 2.4000000953674316,
+			"isCoarsePointer": false,
+			"isHoveringCanvas": true,
+			"openMenus": [],
+			"isChangingStyle": false,
+			"isReadonly": false,
+			"meta": {},
+			"duplicateProps": null,
+			"cameraState": "idle",
+			"id": "instance:instance",
+			"currentPageId": "page:page",
+			"typeName": "instance"
+		}
+	]
+}
