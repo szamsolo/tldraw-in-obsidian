@@ -16,6 +16,7 @@ import { Root } from 'react-dom/client'
 import { Editor, TLDRAW_FILE_EXTENSION, TLStore } from 'tldraw'
 import { createReactStatusBarViewMode } from './components/StatusBarViewMode'
 import createMain from './components/plugin/TldrawInObsidian'
+import { TldrawOfflineFileView } from './obsidian/TldrawOfflineFileView'
 import { ReadonlyTldrawView } from './obsidian/TldrawReadonlyView'
 import {
 	DEFAULT_SETTINGS,
@@ -45,6 +46,7 @@ import {
 	TLDRAW_ICON_NAME,
 	VIEW_TYPE_MARKDOWN,
 	VIEW_TYPE_TLDRAW,
+	VIEW_TYPE_TLDRAW_OFFLINE,
 	VIEW_TYPE_TLDRAW_READ_ONLY,
 	ViewType,
 } from './utils/constants'
@@ -103,6 +105,8 @@ export default class TldrawPlugin extends Plugin {
 		this.registerView(VIEW_TYPE_TLDRAW, (leaf) => new EditableTldrawView(leaf, this))
 
 		this.registerView(VIEW_TYPE_TLDRAW_READ_ONLY, (leaf) => new ReadonlyTldrawView(leaf, this))
+
+		this.registerView(VIEW_TYPE_TLDRAW_OFFLINE, (leaf) => new TldrawOfflineFileView(leaf))
 
 		// settings:
 		await this.settingsManager.loadSettings()
@@ -164,6 +168,14 @@ export default class TldrawPlugin extends Plugin {
 		this.register(() => this.app.embedRegistry.unregisterExtension('tldr'))
 
 		this.registerExtensions(['tldr'], VIEW_TYPE_TLDRAW)
+
+		try {
+			this.registerExtensions(['tldraw'], VIEW_TYPE_TLDRAW_OFFLINE)
+		} catch (e) {
+			// Obsidian throws if another plugin already owns the extension. Explaining that we can't
+			// open these files isn't worth taking the file type away from a plugin that can.
+			console.error(e)
+		}
 
 		const unmount = createMain(this, this.app.dom.statusBarEl)
 		this.register(() => {

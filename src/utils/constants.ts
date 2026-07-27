@@ -6,6 +6,11 @@ export type ViewType = (typeof VIEW_TYPES)[number]
 export const VIEW_TYPE_TLDRAW = 'tldraw-view' // custom view type
 
 export const VIEW_TYPE_TLDRAW_READ_ONLY = 'tldraw-read-only' // custom view type
+/**
+ * For `.tldraw` ending files. Deliberately left out of {@link VIEW_TYPES}, since it isn't a mode
+ * the user can switch a document into — it only exists to explain why we can't open the file.
+ */
+export const VIEW_TYPE_TLDRAW_OFFLINE = 'tldraw-offline' // custom view type
 export const VIEW_TYPE_MARKDOWN = 'markdown' // NOT ACTUALLY A CUSTOM VIEW TYPE, its built in from obsidian
 export const VIEW_TYPES = [
 	VIEW_TYPE_MARKDOWN,
@@ -15,6 +20,11 @@ export const VIEW_TYPES = [
 export const PANE_TARGETS = ['new-window', 'new-tab', 'current-tab', 'split-tab'] as const
 
 export const FILE_EXTENSION = '.md'
+/**
+ * The extension used by tldraw offline. A `.tldraw` file is an archive holding a SQLite database
+ * and its assets, not the JSON a `.tldr` file holds, so none of our parsing can read one.
+ */
+export const TLDRAW_OFFLINE_FILE_EXTENSION = '.tldraw'
 export const FRONTMATTER_KEY = 'tldraw-file'
 export const TLDATA_DELIMITER_START = '!!!_START_OF_TLDRAW_DATA__DO_NOT_CHANGE_THIS_PHRASE_!!!'
 export const TLDATA_DELIMITER_END = '!!!_END_OF_TLDRAW_DATA__DO_NOT_CHANGE_THIS_PHRASE_!!!'

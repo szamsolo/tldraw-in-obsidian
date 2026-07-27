@@ -1,5 +1,9 @@
-import { Platform, TFile } from 'obsidian'
+import { Notice, Platform, TFile } from 'obsidian'
 import TldrawPlugin from 'src/main'
+import {
+	TLDRAW_OFFLINE_UNSUPPORTED_MESSAGE,
+	TLDRAW_OFFLINE_UNSUPPORTED_TITLE,
+} from 'src/obsidian/TldrawOfflineFileView'
 import { showSaveFileModal } from 'src/obsidian/modal/save-file-modal'
 import {
 	Editor,
@@ -8,6 +12,7 @@ import {
 	serializeTldrawJsonBlob,
 	useDefaultHelpers,
 } from 'tldraw'
+import { TLDRAW_OFFLINE_FILE_EXTENSION } from './constants'
 import { migrateTldrawFileDataIfNecessary } from './migrate/tl-data-to-tlstore'
 // import { shouldOverrideDocument } from "src/components/file-menu/shouldOverrideDocument";
 
@@ -103,12 +108,16 @@ export function importFileAction(
 		readonlyOk: true,
 		async onSelect(source) {
 			const tFile = await importTldrawFile(plugin)
+			if (!tFile) return
 			await plugin.openTldrFile(tFile, 'new-tab')
 		},
 	}
 }
 
-export async function importTldrawFile(plugin: TldrawPlugin, attachTo?: TFile) {
+export async function importTldrawFile(
+	plugin: TldrawPlugin,
+	attachTo?: TFile
+): Promise<TFile | undefined> {
 	if ('showOpenFilePicker' in window) {
 		const [file] = await window.showOpenFilePicker({
 			id: 'tldraw-open-file',
@@ -117,12 +126,19 @@ export async function importTldrawFile(plugin: TldrawPlugin, attachTo?: TFile) {
 				{
 					description: 'Tldraw Document',
 					accept: {
-						'text/tldr': ['.tldr'],
+						// tldraw offline files are selectable so that we can explain why we can't import
+						// them yet. Leaving them out would just grey them out with no explanation.
+						'text/tldr': ['.tldr', TLDRAW_OFFLINE_FILE_EXTENSION],
 					},
 				},
 			],
 			excludeAcceptAllOption: true,
 		})
+
+		if (file.name.endsWith(TLDRAW_OFFLINE_FILE_EXTENSION)) {
+			new Notice(`${TLDRAW_OFFLINE_UNSUPPORTED_TITLE}. ${TLDRAW_OFFLINE_UNSUPPORTED_MESSAGE}`)
+			return undefined
+		}
 
 		return plugin.createUntitledTldrFile({
 			attachTo,
