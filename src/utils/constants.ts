@@ -26,14 +26,6 @@ export const FILE_EXTENSION = '.md'
  */
 export const TLDRAW_OFFLINE_FILE_EXTENSION = '.tldraw'
 export const TLDRAW_OFFLINE_UNSUPPORTED_TITLE = 'Can’t open .tldraw files yet'
-export const TLDRAW_OFFLINE_UNSUPPORTED_MESSAGE =
-	'We’re working on support for files from tldraw offline.'
-export const TLDRAW_OFFLINE_EXPORT_PROMPT_BEFORE = 'For now, you can '
-export const TLDRAW_OFFLINE_EXPORT_PROMPT_LINK = 'export as a .tldr file'
-export const TLDRAW_OFFLINE_EXPORT_PROMPT_AFTER = ' to use it here.'
-/** Anchors the "Export as .tldr" section of the tldraw offline user manual. */
-export const TLDRAW_OFFLINE_EXPORT_URL =
-	'https://tldraw.notion.site/User-manual-tldraw-offline-39a3e4c324c080e7b2eacc5afd078e85#3aa3e4c324c080669967e2cc3ae2c789'
 export const FRONTMATTER_KEY = 'tldraw-file'
 export const TLDATA_DELIMITER_START = '!!!_START_OF_TLDRAW_DATA__DO_NOT_CHANGE_THIS_PHRASE_!!!'
 export const TLDATA_DELIMITER_END = '!!!_END_OF_TLDRAW_DATA__DO_NOT_CHANGE_THIS_PHRASE_!!!'
