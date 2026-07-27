@@ -22,20 +22,19 @@ import {
 import { getIsDarkMode } from 'src/utils/utils'
 import { getViewport, saveViewport } from 'src/utils/viewport-storage'
 import {
-	DefaultColorThemePalette,
 	DefaultMainMenu,
 	DefaultPageMenu,
 	DefaultZoomMenu,
 	DefaultZoomMenuContent,
 	Editor,
-	TLComponents,
-	Tldraw,
-	TldrawEditorStoreProps,
-	TldrawOptions,
 	EditSubmenu,
 	ExportFileContentSubMenu,
 	ExtrasGroup,
 	PreferencesGroup,
+	TLComponents,
+	Tldraw,
+	TldrawEditorStoreProps,
+	TldrawOptions,
 	TldrawUiMenuActionItem,
 	TldrawUiMenuCheckboxItem,
 	TldrawUiMenuGroup,
@@ -347,14 +346,23 @@ const TldrawApp = ({
 		return () => plugin.app.workspace.offref(eventRef)
 	}, [plugin, isDarkMode])
 
-	useReactor('sync bg color with obsidian theme', () => {
-		const palette = isDarkMode.get()
-			? DefaultColorThemePalette.darkMode
-			: DefaultColorThemePalette.lightMode
-		palette.background = getComputedStyle(document.body)
-			.getPropertyValue('--background-primary')
-			.trim()
-	})
+	useReactor(
+		'sync bg color with obsidian theme',
+		() => {
+			if (!editor) return
+			const mode = isDarkMode.get() ? 'dark' : 'light'
+			const background = getComputedStyle(document.body)
+				.getPropertyValue('--background-primary')
+				.trim()
+			// tldraw 5 replaced the mutable global palette with per-editor themes, so the canvas
+			// background is set by updating this editor's theme rather than a shared object.
+			editor.updateThemes((themes) => {
+				themes.default.colors[mode].background = background
+				return themes
+			})
+		},
+		[editor, isDarkMode]
+	)
 
 	const userPreferences = useComputed(
 		'userPreferences',
