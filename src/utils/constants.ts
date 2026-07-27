@@ -25,6 +25,9 @@ export const FILE_EXTENSION = '.md'
  * and its assets, not the JSON a `.tldr` file holds, so none of our parsing can read one.
  */
 export const TLDRAW_OFFLINE_FILE_EXTENSION = '.tldraw'
+export const TLDRAW_OFFLINE_UNSUPPORTED_TITLE = 'Can’t open .tldraw files yet'
+export const TLDRAW_OFFLINE_UNSUPPORTED_MESSAGE =
+	'We’re still working on support for files from tldraw offline.'
 export const FRONTMATTER_KEY = 'tldraw-file'
 export const TLDATA_DELIMITER_START = '!!!_START_OF_TLDRAW_DATA__DO_NOT_CHANGE_THIS_PHRASE_!!!'
 export const TLDATA_DELIMITER_END = '!!!_END_OF_TLDRAW_DATA__DO_NOT_CHANGE_THIS_PHRASE_!!!'

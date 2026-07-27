@@ -1,9 +1,5 @@
 import { Notice, Platform, TFile } from 'obsidian'
 import TldrawPlugin from 'src/main'
-import {
-	TLDRAW_OFFLINE_UNSUPPORTED_MESSAGE,
-	TLDRAW_OFFLINE_UNSUPPORTED_TITLE,
-} from 'src/obsidian/TldrawOfflineFileView'
 import { showSaveFileModal } from 'src/obsidian/modal/save-file-modal'
 import {
 	Editor,
@@ -12,7 +8,11 @@ import {
 	serializeTldrawJsonBlob,
 	useDefaultHelpers,
 } from 'tldraw'
-import { TLDRAW_OFFLINE_FILE_EXTENSION } from './constants'
+import {
+	TLDRAW_OFFLINE_FILE_EXTENSION,
+	TLDRAW_OFFLINE_UNSUPPORTED_MESSAGE,
+	TLDRAW_OFFLINE_UNSUPPORTED_TITLE,
+} from './constants'
 import { migrateTldrawFileDataIfNecessary } from './migrate/tl-data-to-tlstore'
 // import { shouldOverrideDocument } from "src/components/file-menu/shouldOverrideDocument";
 
@@ -135,7 +135,9 @@ export async function importTldrawFile(
 			excludeAcceptAllOption: true,
 		})
 
-		if (file.name.endsWith(TLDRAW_OFFLINE_FILE_EXTENSION)) {
+		// Case-insensitive: file dialogs on macOS and Windows match their filters that way, so a
+		// `.TLDRAW` file is selectable and would otherwise fall through to the JSON parser.
+		if (file.name.toLowerCase().endsWith(TLDRAW_OFFLINE_FILE_EXTENSION)) {
 			new Notice(`${TLDRAW_OFFLINE_UNSUPPORTED_TITLE}. ${TLDRAW_OFFLINE_UNSUPPORTED_MESSAGE}`)
 			return undefined
 		}

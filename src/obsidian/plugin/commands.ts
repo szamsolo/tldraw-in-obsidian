@@ -28,9 +28,9 @@ async function createTldrawFile(
 			e instanceof Error
 				? e.message
 				: (() => {
-						console.error(e)
-						return 'An unknown error occurred while creating a new tldraw file.'
-					})()
+					console.error(e)
+					return 'An unknown error occurred while creating a new tldraw file.'
+				})()
 		)
 	}
 }
