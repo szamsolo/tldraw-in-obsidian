@@ -1,6 +1,10 @@
 import { FileView, Menu, WorkspaceLeaf } from 'obsidian'
 import {
 	TLDRAW_ICON_NAME,
+	TLDRAW_OFFLINE_EXPORT_PROMPT_AFTER,
+	TLDRAW_OFFLINE_EXPORT_PROMPT_BEFORE,
+	TLDRAW_OFFLINE_EXPORT_PROMPT_LINK,
+	TLDRAW_OFFLINE_EXPORT_URL,
 	TLDRAW_OFFLINE_UNSUPPORTED_MESSAGE,
 	TLDRAW_OFFLINE_UNSUPPORTED_TITLE,
 	VIEW_TYPE_TLDRAW_OFFLINE,
@@ -64,6 +68,14 @@ export class TldrawOfflineFileView extends FileView {
 		const container = this.contentEl.createDiv({ cls: 'ptl-offline-unsupported' })
 		container.createEl('h3', { text: TLDRAW_OFFLINE_UNSUPPORTED_TITLE })
 		container.createEl('p', { text: TLDRAW_OFFLINE_UNSUPPORTED_MESSAGE })
+
+		const prompt = container.createEl('p')
+		prompt.appendText(TLDRAW_OFFLINE_EXPORT_PROMPT_BEFORE)
+		prompt.createEl('a', {
+			text: TLDRAW_OFFLINE_EXPORT_PROMPT_LINK,
+			href: TLDRAW_OFFLINE_EXPORT_URL,
+		})
+		prompt.appendText(TLDRAW_OFFLINE_EXPORT_PROMPT_AFTER)
 	}
 
 	private openInDefaultApp() {

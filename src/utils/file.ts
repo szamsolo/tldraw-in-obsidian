@@ -9,6 +9,10 @@ import {
 	useDefaultHelpers,
 } from 'tldraw'
 import {
+	TLDRAW_OFFLINE_EXPORT_PROMPT_AFTER,
+	TLDRAW_OFFLINE_EXPORT_PROMPT_BEFORE,
+	TLDRAW_OFFLINE_EXPORT_PROMPT_LINK,
+	TLDRAW_OFFLINE_EXPORT_URL,
 	TLDRAW_OFFLINE_FILE_EXTENSION,
 	TLDRAW_OFFLINE_UNSUPPORTED_MESSAGE,
 	TLDRAW_OFFLINE_UNSUPPORTED_TITLE,
@@ -138,7 +142,19 @@ export async function importTldrawFile(
 		// Case-insensitive: file dialogs on macOS and Windows match their filters that way, so a
 		// `.TLDRAW` file is selectable and would otherwise fall through to the JSON parser.
 		if (file.name.toLowerCase().endsWith(TLDRAW_OFFLINE_FILE_EXTENSION)) {
-			new Notice(`${TLDRAW_OFFLINE_UNSUPPORTED_TITLE}. ${TLDRAW_OFFLINE_UNSUPPORTED_MESSAGE}`)
+			// A fragment rather than a string so the notice can carry the link to the manual.
+			const notice = document.createDocumentFragment()
+			notice.createEl('strong', { text: TLDRAW_OFFLINE_UNSUPPORTED_TITLE })
+			notice.createEl('br')
+			notice.appendText(
+				`${TLDRAW_OFFLINE_UNSUPPORTED_MESSAGE} ${TLDRAW_OFFLINE_EXPORT_PROMPT_BEFORE}`
+			)
+			notice.createEl('a', {
+				text: TLDRAW_OFFLINE_EXPORT_PROMPT_LINK,
+				href: TLDRAW_OFFLINE_EXPORT_URL,
+			})
+			notice.appendText(TLDRAW_OFFLINE_EXPORT_PROMPT_AFTER)
+			new Notice(notice)
 			return undefined
 		}
 
