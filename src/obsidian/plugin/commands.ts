@@ -153,6 +153,7 @@ export function registerCommands(plugin: TldrawPlugin) {
 		name: 'Import file as new document and open in a new tab',
 		callback: async () => {
 			const tFile = await importTldrawFile(plugin)
+			if (!tFile) return
 			await plugin.openTldrFile(tFile, 'new-tab')
 		},
 	})
@@ -169,6 +170,7 @@ export function registerCommands(plugin: TldrawPlugin) {
 			const from = editor.getCursor('from')
 			const to = editor.getCursor('to')
 			const tFile = await importTldrawFile(plugin, file)
+			if (!tFile) return
 			editorInsert(new TldrawDocument(plugin, tFile), editor, from, to)
 		},
 	})
