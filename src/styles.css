@@ -548,3 +548,23 @@ div[data-type='tldraw-read-only'] .view-content.tldraw-view-content {
 .ptl-document-messages-actions button.mod-cta {
 	margin: 0;
 }
+
+.ptl-offline-unsupported {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: var(--size-4-1);
+	height: 100%;
+	padding: var(--size-4-4);
+	text-align: center;
+}
+
+.ptl-offline-unsupported h3 {
+	margin: 0;
+}
+
+.ptl-offline-unsupported p {
+	margin: 0;
+	color: var(--text-muted);
+}

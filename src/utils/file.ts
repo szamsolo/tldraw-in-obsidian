@@ -1,4 +1,4 @@
-import { Platform, TFile } from 'obsidian'
+import { Notice, Platform, TFile } from 'obsidian'
 import TldrawPlugin from 'src/main'
 import { showSaveFileModal } from 'src/obsidian/modal/save-file-modal'
 import {
@@ -8,7 +8,9 @@ import {
 	serializeTldrawJsonBlob,
 	useDefaultHelpers,
 } from 'tldraw'
+import { TLDRAW_OFFLINE_FILE_EXTENSION, TLDRAW_OFFLINE_UNSUPPORTED_TITLE } from './constants'
 import { migrateTldrawFileDataIfNecessary } from './migrate/tl-data-to-tlstore'
+import { appendTldrawOfflineMessage } from './tldraw-offline-message'
 // import { shouldOverrideDocument } from "src/components/file-menu/shouldOverrideDocument";
 
 export const SAVE_FILE_COPY_ACTION = 'save-file-copy'
@@ -103,12 +105,16 @@ export function importFileAction(
 		readonlyOk: true,
 		async onSelect(source) {
 			const tFile = await importTldrawFile(plugin)
+			if (!tFile) return
 			await plugin.openTldrFile(tFile, 'new-tab')
 		},
 	}
 }
 
-export async function importTldrawFile(plugin: TldrawPlugin, attachTo?: TFile) {
+export async function importTldrawFile(
+	plugin: TldrawPlugin,
+	attachTo?: TFile
+): Promise<TFile | undefined> {
 	if ('showOpenFilePicker' in window) {
 		const [file] = await window.showOpenFilePicker({
 			id: 'tldraw-open-file',
@@ -117,12 +123,25 @@ export async function importTldrawFile(plugin: TldrawPlugin, attachTo?: TFile) {
 				{
 					description: 'Tldraw Document',
 					accept: {
-						'text/tldr': ['.tldr'],
+						// tldraw offline files are selectable so that we can explain why we can't import
+						// them yet. Leaving them out would just grey them out with no explanation.
+						'text/tldr': ['.tldr', TLDRAW_OFFLINE_FILE_EXTENSION],
 					},
 				},
 			],
 			excludeAcceptAllOption: true,
 		})
+
+		// Case-insensitive: file dialogs on macOS and Windows match their filters that way, so a
+		// `.TLDRAW` file is selectable and would otherwise fall through to the JSON parser.
+		if (file.name.toLowerCase().endsWith(TLDRAW_OFFLINE_FILE_EXTENSION)) {
+			// A fragment rather than a string, so the notice can carry the links.
+			const notice = document.createDocumentFragment()
+			notice.createEl('strong', { text: TLDRAW_OFFLINE_UNSUPPORTED_TITLE })
+			appendTldrawOfflineMessage(notice)
+			new Notice(notice)
+			return undefined
+		}
 
 		return plugin.createUntitledTldrFile({
 			attachTo,
