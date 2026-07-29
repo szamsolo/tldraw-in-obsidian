@@ -1,6 +1,6 @@
 {
 	"name": "tldraw-in-obsidian",
-	"version": "1.29.1",
+	"version": "1.30.0-alpha.1",
 	"description": "Integrates Tldraw into Obsidian, allowing users to draw and edit content on a virtual whiteboard.",
 	"main": "dist/production/main.js",
 	"private": true,
@@ -70,7 +70,7 @@
 		"monkey-around": "^2.3.0",
 		"react": "^18.3.1",
 		"react-dom": "^18.3.1",
-		"tldraw": "4.5.0-internal.66c28d065c67",
+		"tldraw": "^5.2.5",
 		"zustand": "^4.3.9"
 	}
 }
