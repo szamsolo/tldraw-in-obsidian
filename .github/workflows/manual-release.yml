@@ -86,12 +86,26 @@ jobs:
           git push origin "refs/tags/$tag"
           echo "✅ Tagged $(git rev-parse --short HEAD) as $tag"
 
+          # Notes are generated from the pull requests merged since the last full release. Reading
+          # them from the tag instead gives you whatever commit happened to be tagged, which since
+          # the tag is created here is just the previous PR's description.
+          notes_args="--generate-notes"
+          previous="$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name 2>/dev/null || true)"
+          if [ -n "$previous" ]; then
+            # /releases/latest skips prereleases and drafts, so this is the last version people
+            # actually got, which is the useful thing to list changes against.
+            notes_args="$notes_args --notes-start-tag $previous"
+            echo "ℹ️  Generating notes for changes since $previous"
+          else
+            echo "ℹ️  No previous release found; generating notes from the full history"
+          fi
+
           # Create empty draft release
           gh release create "$tag" \
             --title "$tag" \
-            --notes-from-tag \
             --draft \
             --verify-tag \
+            $notes_args \
             $prerelease_args
           
           if [ $? -ne 0 ]; then
