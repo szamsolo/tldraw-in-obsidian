@@ -49,7 +49,10 @@ jobs:
           fi
 
           if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
-            echo "❌ Tag $tag already exists. Bump the version in package.json first."
+            echo "❌ Tag $tag already exists."
+            echo "   If $tag was released, bump the version in package.json and run this again."
+            echo "   If an earlier run failed after tagging, remove the tag and retry:"
+            echo "     git push --delete origin $tag"
             exit 1
           fi
 
