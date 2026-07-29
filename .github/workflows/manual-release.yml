@@ -1,15 +1,15 @@
 name: Manual Release
 
-# NOTE: This workflow creates a release from the current repository state.
-# Make sure you're on the commit you want to release before running this workflow.
-# The commit should have the version you want to release in the manifest.json and versions.json files.
+# NOTE: This workflow releases whatever `ref` points at, at the version in its package.json, and
+# creates the tag itself. Bump the version and let `npm run version` cascade it into
+# release/manifest.json — and, for non-prerelease versions, release/versions.json — before running.
 
 on:
   workflow_dispatch:
     inputs:
-      tag:
-        description: 'Version tag to create release from (e.g., 1.26.3)'
-        default: ''
+      ref:
+        description: 'Branch, tag or commit to release from'
+        default: 'main'
         required: true
         type: string
 
@@ -29,28 +29,39 @@ jobs:
       contents: write
 
     steps:
-      - name: Validate tag format
+      - name: Check out plugin repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.inputs.ref }}
+
+      # The tag comes from package.json rather than being typed in, so the release can't be tagged
+      # with a version the build doesn't actually produce.
+      - name: Read version to release
         id: validate_tag
         run: |
-          tag="${{ github.event.inputs.tag }}"
+          tag="$(node -p "require('./package.json').version")"
+
           # Allow x.y.z or x.y.z-prerelease.label format
           if ! echo "$tag" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$'; then
-            echo "❌ Invalid tag format. Must be in x.y.z format (e.g., 1.26.3) or x.y.z-prerelease format (e.g., 1.26.3-alpha.1)"
+            echo "❌ Invalid version in package.json: $tag"
+            echo "   Must be x.y.z (e.g. 1.26.3) or x.y.z-prerelease (e.g. 1.26.3-alpha.1)"
             exit 1
           fi
-          
+
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
+            echo "❌ Tag $tag already exists. Bump the version in package.json first."
+            exit 1
+          fi
+
           # Check if it's a prerelease
           if echo "$tag" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+-'; then
             echo "is_prerelease=true" >> $GITHUB_OUTPUT
-            echo "✅ Tag format validated (prerelease): $tag"
+            echo "✅ Releasing $tag from ${{ github.event.inputs.ref }} (prerelease)"
           else
             echo "is_prerelease=false" >> $GITHUB_OUTPUT
-            echo "✅ Tag format validated (release): $tag"
+            echo "✅ Releasing $tag from ${{ github.event.inputs.ref }}"
           fi
           echo "tag=$tag" >> $GITHUB_OUTPUT
-
-      - name: Check out plugin repository
-        uses: actions/checkout@v6
 
       # We create a draft early on to ensure we are able to before actually spending time building the release files
       - name: Create empty draft release
@@ -65,20 +76,13 @@ jobs:
             prerelease_args="--prerelease"
           fi
 
-          # Ensure the specific tag exists locally; fetch only that tag if needed
-          if ! git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
-            echo "Tag $tag not found locally; attempting to fetch from origin..."
-            if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
-              git fetch origin "refs/tags/$tag:refs/tags/$tag"
-              echo "Fetched tag $tag from origin"
-            else
-              echo "Tag $tag does not exist on origin"
-              exit 1
-            fi
-          else
-            echo "Tag $tag already present locally"
-          fi
-          
+          # Tag the ref we checked out, so the release points at exactly what gets built here.
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git tag "$tag"
+          git push origin "refs/tags/$tag"
+          echo "✅ Tagged $(git rev-parse --short HEAD) as $tag"
+
           # Create empty draft release
           gh release create "$tag" \
             --title "$tag" \
@@ -229,10 +233,12 @@ jobs:
             # We are not adding any new files
             echo "ℹ️  Prerelease version - skipping git push"
           else
-            git push
-
-            if [ $? -ne 0 ]; then
-              echo "❌ Failed to push changes"
+            # Named explicitly because the checkout is detached whenever `ref` isn't a branch. A
+            # real release has to land its manifest.json and versions.json somewhere, so releasing
+            # one from a tag or a bare commit should fail here rather than silently lose them.
+            if ! git push origin "HEAD:refs/heads/${{ github.event.inputs.ref }}"; then
+              echo "❌ Failed to push the updated manifest.json and versions.json."
+              echo "   A non-prerelease has to be released from a branch, usually main."
               exit 1
             fi
           fi
