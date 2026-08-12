@@ -1,0 +1,2 @@
+export const TLDRAW_LICENSE_KEY =
+	'tldraw-tldraw-2027-08-12/WyI5N2lFVC1WTiIsWyJeYXBwOi8vb2JzaWRpYW5cXC5tZChbOi9dfCQpIl0sNDEsIjIwMjctMDgtMTIiXQ.00JZlr2ebqjPfAmvg3cAq4yDUX6bYheyzH5w3wdCKA0gtptldg/bvEj0hboLD6rtAXwD/zgOicTHPhlXqmWXRw'

@@ -7,6 +7,7 @@ import { TldrawInObsidianPluginProvider } from 'src/contexts/plugin'
 import { useClickAwayListener } from 'src/hooks/useClickAwayListener'
 import { useTldrawAppEffects } from 'src/hooks/useTldrawAppHook'
 import TldrawPlugin from 'src/main'
+import { TLDRAW_LICENSE_KEY } from 'src/tldraw/license'
 import {
 	CREATE_PAGE_ACTION,
 	PLUGIN_ACTION_TOGGLE_ZOOM_LOCK,
@@ -437,7 +438,7 @@ const TldrawApp = ({
 				autoFocus={false}
 				onMount={setAppState}
 				tools={tools}
-				licenseKey="tldraw-tldraw-2026-07-10/WyIyU3h6ZzhTZyIsWyIqLnRsZHJhdy5jb20iLCIqLnRsZHJhdy5kZXYiLCIqLnRsZHJhdy5jbHViIiwiKi50bGRyYXcud29ya2Vycy5kZXYiXSw5LCIyMDI2LTA3LTEwIl0.+21jrvz5ZFmIvvA/DusCcnFV6Ab1iQQYR+INTqw/i/MmZe/5I/lhdLtqm9nprkQ1MfWL2PeyBmQui1+rjoQS1w"
+				licenseKey={TLDRAW_LICENSE_KEY}
 			/>
 		</div>
 	)
