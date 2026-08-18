@@ -31,6 +31,7 @@ export default defineConfig(() => {
       port: process.env.PORT ? parseInt(process.env.PORT) : 5173,
     },
     define: {
+      'process.env.NODE_ENV': JSON.stringify(prod ? 'production' : 'development'),
       TLDRAW_VERSION,
       MARKDOWN_POST_PROCESSING_LOGGING: `${!prod}`,
       TLDRAW_COMPONENT_LOGGING: `${!prod}`,

@@ -49,6 +49,7 @@ const context = await createEsbuildObsidianContext({
 		},
 		outdir,
 		define: {
+			'process.env.NODE_ENV': JSON.stringify(prod ? 'production' : 'development'),
 			TLDRAW_COMPONENT_LOGGING: `${!prod}`,
 			MARKDOWN_POST_PROCESSING_LOGGING: `${!prod}`,
 			TLDRAW_VERSION: `"${TLDRAW_VERSION}"`,
