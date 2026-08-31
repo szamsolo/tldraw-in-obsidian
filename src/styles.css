@@ -24,7 +24,9 @@
 	visibility: hidden;
 }
 
-button:not(.clickable-icon) {
+/* Scoped to .tldraw-view-root so it only overrides Obsidian's button color inside
+   tldraw, instead of leaking to every button in the app (e.g. Settings, Notices). #203 */
+.tldraw-view-root button:not(.clickable-icon) {
 	color: currentColor;
 }
 
